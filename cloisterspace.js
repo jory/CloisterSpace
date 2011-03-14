@@ -105,7 +105,14 @@ var Tile = function(imageName, north, east, south, west, hasTwoCities, hasRoadEn
 				hasTwoCities: hasTwoCities,
         hasRoadEnd: hasRoadEnd
 			});
+		},
+		
+		
+		
+		getCities: function() {
+			console.debug(_([this.edges.north.city,this.edges.east.city,this.edges.west.city,this.edges.south.city]).chain().flatten().unique().reject(function(i) { return i == "-";}).value());
 		}
+		
 	};
 };
 
@@ -126,7 +133,7 @@ function generateRandomWorld(){
 		// CityMap (order NESW), 
 		// GrassMap (clockwise-order starting from top-edge on the left side. Or in compass notation: NNW,NNE,ENE,ESE,SSE,SSW,WSW,WNW) 
 		//
-		/*
+		
 		"city4.png	1	reg	cccc		----	1111	--------",
 		"road4.png	1	reg	rrrr		1234	----	12233441",
 		"city3.png	3	reg	ccgc		----	11-1	----11--",
@@ -154,7 +161,7 @@ function generateRandomWorld(){
 		
 		"city1.png	5	reg	cggg		----	1---	--111111",
 		"city1rse.png	3	reg	crrg		-11-	1---	--122111",
-		*/
+		
 		"city1rsw.png	3	reg	cgrr		--11	1---	--111221",
 		"city1rswe.png	3	reg	crrr		-123	1---	--122331",
 		"city1rwe.png	4	start	crgr		-1-1	1---	--122221"
@@ -386,6 +393,7 @@ function generateRandomWorld(){
 			}
 
 			placeTile(placementLocation[0], placementLocation[1], tile);
+			tile.getCities();
 			maxrow = Math.max(maxrow, placementLocation[0]);
 			minrow = Math.min(minrow, placementLocation[0]);
 			maxcol = Math.max(maxcol, placementLocation[1]);
@@ -440,6 +448,26 @@ function drawWorld(worldObject){
 	}
 
 	$("body").append(table); 
+
+	console.log("Rendered world in ", ((new Date()).getTime() - startTime), "ms" );
+};
+
+
+function countFarm(worldObject){
+	var world = worldObject.world;
+	var extents = worldObject.extents;
+	
+	var counter = 0;
+
+	for(var row = extents.minrow; row < extents.maxrow + 1; row++){
+		for(var col = extents.mincol; col < extents.maxcol + 1; col++){
+			if(typeof(world[row][col])!='undefined'){
+				td = $("<td><img src='img/" + world[row][col].getImage() + "' class='" + world[row][col].getRotationClass() + "' tindex='" + counter + "' row='" + row + "' col='" + col + "' /></td>");
+				counter++;
+			}
+		}
+	}
+
 
 	console.log("Rendered world in ", ((new Date()).getTime() - startTime), "ms" );
 };
