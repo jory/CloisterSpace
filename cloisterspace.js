@@ -92,7 +92,7 @@ var Tile = function(imageName, north, east, south, west, hasTwoCities, hasRoadEn
 				south:"north",
 				west:"east"
 			}[inDirection]];
-			return thisEdge === otherEdge;
+			return thisEdge.edge === otherEdge.edge;
 		},
 
 		toJSON: function(){
@@ -126,9 +126,11 @@ function generateRandomWorld(){
 		// CityMap (order NESW), 
 		// GrassMap (clockwise-order starting from top-edge on the left side. Or in compass notation: NNW,NNE,ENE,ESE,SSE,SSW,WSW,WNW) 
 		//
+		/*
 		"city4.png	1	reg	cccc		----	1111	--------",
 		"road4.png	1	reg	rrrr		1234	----	12233441",
 		"city3.png	3	reg	ccgc		----	11-1	----11--",
+		
 		"city3s.png	1	reg	ccgc		----	11-1	----11--",
 		"city3r.png	1	reg	ccrc		--1-	11-1	----12--",
 		"city3sr.png	2	reg	ccrc		--1-	11-1	----12--",
@@ -137,16 +139,22 @@ function generateRandomWorld(){
 		"city2wes.png	2	reg	gcgc		----	-1-1	11--22--",
 		"road2ns.png	8	reg	rgrg		1-1-	----	12222111",
 		"city2nw.png	3	reg	cggc		----	1--1	--1111--",
+		
 		"city2nws.png	2	reg	cggc		----	1--1	--1111--",
 		"city2nwr.png	3	reg	crrc		-11-	1--1	--1221--",
+		
 		"city2nwsr.png	2	reg	crrc		-11-	1--1	--1221--",
+		
 		"road2sw.png	9	reg	ggrr		--11	----	11111221",
+		
 		"city11ne.png	2	reg	ccgg	11	----	12--	----1111",
 		"city11we.png	3	reg	gcgc	11	----	-1-2	11--11--",
 		"cloisterr.png	2	reg	ggrg		--1-	----	11111111",
 		"cloister.png	4	reg	gggg		----	----	11111111",
+		
 		"city1.png	5	reg	cggg		----	1---	--111111",
 		"city1rse.png	3	reg	crrg		-11-	1---	--122111",
+		*/
 		"city1rsw.png	3	reg	cgrr		--11	1---	--111221",
 		"city1rswe.png	3	reg	crrr		-123	1---	--122331",
 		"city1rwe.png	4	start	crgr		-1-1	1---	--122221"
@@ -157,6 +165,9 @@ function generateRandomWorld(){
 	}).map(function(item) {
 
 		var edges = item[3].split("");
+		var roadEdges = item[5].split("");
+		var cityEdges = item[6].split("");
+		var grassEdges = item[7].split("");
     
     // finds how many road edges the tile has in order to detect if tile has a road end. 
     // tiles with road ends have 1, 3, or 4 road edges while tiles with continuous roads have 2 road edges
@@ -165,10 +176,10 @@ function generateRandomWorld(){
 		// This is a tile object
 		return {
 			img: item[0],
-			north: edgeDefs[edges[0]],
-			east: edgeDefs[edges[1]],
-			south: edgeDefs[edges[2]],
-			west: edgeDefs[edges[3]],
+			north: {edge: edgeDefs[edges[0]], road: roadEdges[0], city: cityEdges[0], grass: [grassEdges[0], grassEdges[1]]},
+			east: {edge: edgeDefs[edges[1]], road: roadEdges[1], city: cityEdges[1], grass: [grassEdges[2], grassEdges[3]]},
+			south: {edge: edgeDefs[edges[2]], road: roadEdges[2], city: cityEdges[2], grass: [grassEdges[4], grassEdges[5]]},
+			west: {edge: edgeDefs[edges[3]], road: roadEdges[3], city: cityEdges[3], grass: [grassEdges[6], grassEdges[7]]},
 			isStart: (item[2]=="start"),
 			hasTwoCities: item[4]==="11",
       hasRoadEnd: [1, 3, 4].indexOf(roadEdgeCount) !== -1,
@@ -190,6 +201,7 @@ function generateRandomWorld(){
 				tileDef.south,
 				tileDef.west,
 				tileDef.hasTwoCities,
+				
         tileDef.hasRoadEnd
 			));
 		}
@@ -219,13 +231,15 @@ function generateRandomWorld(){
 		world[row][col] = tile;
 	};
 
-	// bootstrap tile is placed in the middle.
-	placeTile(72,72,tiles[0]);
+	var center = tiles.length;
 
-	var maxcol = 72;
-	var mincol = 72;
-	var maxrow = 72;
-	var minrow = 72;
+	// bootstrap tile is placed in the middle.
+	placeTile(center,center,tiles[0]);
+
+	var maxcol = center;
+	var mincol = center;
+	var maxrow = center;
+	var minrow = center;
 
 	//
 	// Build the world outwards in carcassone style by building lists 
@@ -273,7 +287,7 @@ function generateRandomWorld(){
 
       var edges = tile.edges;
 
-      if ([edges.north, edges.south, edges.east, edges.west].indexOf(EDGE_TYPE_ROAD) === -1) {
+      if ([edges.north.edge, edges.south.edge, edges.east.edge, edges.west.edge].indexOf(EDGE_TYPE_ROAD) === -1) {
         // This tile does contain a road
         return 0; 
       } else {
@@ -285,7 +299,7 @@ function generateRandomWorld(){
         // cycle through directions
         adjacents.each(function(adj) {
           // is direction a road connection?
-          if (edges[adj.direction] === EDGE_TYPE_ROAD) {
+          if (edges[adj.direction].edge === EDGE_TYPE_ROAD) {
             // is the connection the incoming connection?
             if (adj.direction !== incomingDir) {
               total += getRoadLength(row + adj.rowOffset, col + adj.colOffset, getOppositeDirection(adj.direction));
@@ -437,6 +451,7 @@ function drawWorld(worldObject){
 $(function(){
 
 	var world = generateRandomWorld();
+	
 	drawWorld(world);
 
 });
