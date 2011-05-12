@@ -447,7 +447,7 @@ function drawWorld(worldObject){
         tbody.append(tr);
     }
 
-    $("body").append(table);
+    $("#board").append(table);
 
     console.log("Rendered world in ", ((new Date()).getTime() - startTime), "ms" );
 };
@@ -477,9 +477,12 @@ function countFarm(worldObject){
 // In-browser bootstrap
 //
 $(function(){
+    var scrollbarWidth = $.scrollbarWidth();
+
+    $(window).resize(function() {
+        $('#board').height($(window).height() - scrollbarWidth - 120);
+    }).resize();
 
     var world = generateRandomWorld();
-
     drawWorld(world);
-
 });
