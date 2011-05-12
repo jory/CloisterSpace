@@ -248,16 +248,19 @@ function generateRandomWorld(){
     var maxrow = center;
     var minrow = center;
 
+    var candidateLocations = [];
+    var candidateTile;
+
     //
     // Build the world outwards in carcassone style by building lists
     // of compatible locations and then choosing one randomly.
     // if the compatible location list is empty for a given tile,
     // we toss that tile out.
     //
-    _(tiles).each(function(tile, i){
+    _(tiles.slice(1, 2)).each(function(tile, i){
 
         // ignore the starter tile because we already placed it.
-        if(i==0){
+        if (tile.isStart) {
             return;
         }
 
@@ -318,14 +321,11 @@ function generateRandomWorld(){
             return total;
         }
 
-
-        var candidateLocations = [];
-
         //
         // scans current tilespace bounding box and padding to find available tile positions
         //
-        for(var row = minrow - 1; row < maxrow + 1; row++){
-            for(var col = mincol - 1; col < maxcol + 1; col++){
+        for(var row = minrow - 1; row < maxrow + 2; row++){
+            for(var col = mincol - 1; col < maxcol + 2; col++){
                 // The starting tile position is 72, 72 the middle of the tilespace matrix
                 // The first iteration will check the available spaces around this position
                 // ie. a 3x3 grid centered on 72, 72 rows 71->73 cols 71->73
@@ -378,32 +378,33 @@ function generateRandomWorld(){
                     // This spot is taken. Ignore
                 }
             }
+
+            candidateTile = tile;
         }
 
         //
         // Choose a random candidate location and place the tile there.
         //
-        if(candidateLocations.length > 0){
-            var candidateIndex = Math.round(Math.random() * (candidateLocations.length - 1));
-            var placementLocation = candidateLocations[candidateIndex];
+        // if(candidateLocations.length > 0){
+        //     var candidateIndex = Math.round(Math.random() * (candidateLocations.length - 1));
+        //     var placementLocation = candidateLocations[candidateIndex];
 
-            // if we have rotation, apply rotation now
-            if(placementLocation[2] != 0){
-                tile.rotate(placementLocation[2]);
-            }
+        //     // if we have rotation, apply rotation now
+        //     if(placementLocation[2] != 0){
+        //         tile.rotate(placementLocation[2]);
+        //     }
 
-            placeTile(placementLocation[0], placementLocation[1], tile);
-            tile.getCities();
-            maxrow = Math.max(maxrow, placementLocation[0]);
-            minrow = Math.min(minrow, placementLocation[0]);
-            maxcol = Math.max(maxcol, placementLocation[1]);
-            mincol = Math.min(mincol, placementLocation[1]);
+        //     placeTile(placementLocation[0], placementLocation[1], tile);
+        //     maxrow = Math.max(maxrow, placementLocation[0]);
+        //     minrow = Math.min(minrow, placementLocation[0]);
+        //     maxcol = Math.max(maxcol, placementLocation[1]);
+        //     mincol = Math.min(mincol, placementLocation[1]);
 
-            // detect length of road when tile is placed.
-            //console.log(getRoadLength(placementLocation[0], placementLocation[1]));
-        } else {
-            // uh oh.. we have to throw this tile out
-        }
+        //     // detect length of road when tile is placed.
+        //     //console.log(getRoadLength(placementLocation[0], placementLocation[1]));
+        // } else {
+        //     // uh oh.. we have to throw this tile out
+        // }
     });
 
     console.log("Generated world in ", ((new Date()).getTime() - startTime), "ms" );
@@ -411,6 +412,8 @@ function generateRandomWorld(){
     return {
         // return extents so that we can render a minimally-sized world
         world: world,
+        candidateLocations: candidateLocations,
+        candidateTile: candidateTile,
         extents: {
             maxrow: maxrow,
             maxcol: maxcol,
@@ -424,6 +427,26 @@ function generateRandomWorld(){
 function drawWorld(worldObject){
     var world = worldObject.world;
     var extents = worldObject.extents;
+    var candidateTile = worldObject.candidateTile;
+    var candidateLocations = worldObject.candidateLocations;
+
+    var locations = new Array(world.length);
+    for(var i = 0; i < locations.length; i++){
+        locations[i] = new Array(world.length);
+    }
+
+    for (var i = 0, l = candidateLocations.length; i < l; i++) {
+        var location = candidateLocations[i];
+        var row = location[0];
+        var col = location[1];
+        var value = [location[2], location[3]];
+
+        if (locations[row][col] == undefined) {
+            locations[row][col] = [value];
+        } else {
+            locations[row][col].push(value);
+        }
+    }
 
     var startTime = (new Date()).getTime();
 
@@ -432,14 +455,21 @@ function drawWorld(worldObject){
     var table = $("<table><tbody></tbody></table>");
     tbody = table.find("tbody");
 
-    for(var row = extents.minrow; row < extents.maxrow + 1; row++){
+    for(var row = extents.minrow - 1; row < extents.maxrow + 2; row++){
         var tr = $("<tr></tr>");
-        for(var col = extents.mincol; col < extents.maxcol + 1; col++){
+        for(var col = extents.mincol - 1; col < extents.maxcol + 2; col++){
             var td;
             if(typeof(world[row][col])=='undefined'){
-                td = $("<td></td>");
+                if (typeof(locations[row][col]) != 'undefined') {
+                    td = $("<td class='candidate'></td>");
+                }
+                else {
+                    td = $("<td></td>");
+                }
             } else {
-                td = $("<td><img src='img/" + world[row][col].getImage() + "' class='" + world[row][col].getRotationClass() + "' tindex='" + counter + "' row='" + row + "' col='" + col + "' /></td>");
+                td = $("<td><img src='img/" + world[row][col].getImage() + "' class='" + 
+                       world[row][col].getRotationClass() + "' tindex='" + counter + 
+                       "' row='" + row + "' col='" + col + "' /></td>");
                 counter++;
             }
             tr.append(td);
@@ -448,6 +478,8 @@ function drawWorld(worldObject){
     }
 
     $("#board").append(table);
+
+    $("#candidate").attr('src', 'img/' + candidateTile.getImage());
 
     console.log("Rendered world in ", ((new Date()).getTime() - startTime), "ms" );
 };

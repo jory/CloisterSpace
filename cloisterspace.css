@@ -33,3 +33,7 @@ td {
     margin: auto;
     padding: 15px;
 }
+
+.candidate {
+    background: #002b36;
+}
