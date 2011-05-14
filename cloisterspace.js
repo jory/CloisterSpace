@@ -16,6 +16,7 @@ var edgeDefs = {
 
 
 var Tile = function(imageName, north, east, south, west, hasTwoCities, hasRoadEnd){
+    var rotation = 0;
     var rotationClass = "";
 
     var turnedEdge = function(dir){
@@ -43,15 +44,22 @@ var Tile = function(imageName, north, east, south, west, hasTwoCities, hasRoadEn
             return imageName;
         },
 
+        getRotation: function(){
+            return rotation;
+        },
+
         getRotationClass: function(){
             return rotationClass;
         },
 
         rotate: function(turns){
             if(turns == 0){
+                rotation = 0;
+                rotationClass = "";
                 return;
             }
             if(turns == 1 || turns==2 || turns==3) {
+                rotation = turns;
                 rotationClass = "r" + turns;
             } else {
                 throw "invalid rotation";
@@ -428,6 +436,7 @@ function drawWorld(worldObject){
     var world = worldObject.world;
     var extents = worldObject.extents;
     var candidateTile = worldObject.candidateTile;
+    var rotation = candidateTile.getRotation();
     var candidateLocations = worldObject.candidateLocations;
 
     var locations = new Array(world.length);
@@ -460,14 +469,26 @@ function drawWorld(worldObject){
         for(var col = extents.mincol - 1; col < extents.maxcol + 2; col++){
             var td;
             if(typeof(world[row][col])=='undefined'){
-                if (typeof(locations[row][col]) != 'undefined') {
-                    td = $("<td class='candidate'></td>");
+                var loc = locations[row][col];
+                if (typeof(loc) != 'undefined') {
+                    var set = false;
+                    for (var i = 0, l = loc.length; i < l; i++) {
+                        if (loc[i][0] == rotation) {
+                            td = $("<td class='candidate' row='" + row + "' col='" + col + "'></td>");
+                            set = true;
+                            break;
+                        }
+                    }
+
+                    if (! set) {
+                        td = $("<td row='" + row + "' col='" + col + "'></td>");
+                    }
                 }
                 else {
-                    td = $("<td></td>");
+                    td = $("<td row='" + row + "' col='" + col + "'></td>");
                 }
             } else {
-                td = $("<td><img src='img/" + world[row][col].getImage() + "' class='" + 
+                td = $("<td row='" + row + "' col='" + col + "'><img src='img/" + world[row][col].getImage() + "' class='" + 
                        world[row][col].getRotationClass() + "' tindex='" + counter + 
                        "' row='" + row + "' col='" + col + "' /></td>");
                 counter++;
@@ -477,9 +498,31 @@ function drawWorld(worldObject){
         tbody.append(tr);
     }
 
-    $("#board").append(table);
+    $("#board").empty().append(table);
 
-    $("#candidate").attr('src', 'img/' + candidateTile.getImage());
+    $("#candidate").attr('src', 'img/' + candidateTile.getImage()).attr('class', candidateTile.getRotationClass());
+
+    $("#left").unbind().click(function() {
+        var rotation = candidateTile.getRotation();
+        if (rotation == 0) {
+            candidateTile.rotate(3);
+        } else {
+            candidateTile.rotate(rotation - 1);
+        }
+
+        drawWorld(worldObject);
+    });
+
+    $("#right").unbind().click(function() {
+        var rotation = candidateTile.getRotation();
+        if (rotation == 3) {
+            candidateTile.rotate(0);
+        } else {
+            candidateTile.rotate(rotation + 1);
+        }
+
+        drawWorld(worldObject);
+    });
 
     console.log("Rendered world in ", ((new Date()).getTime() - startTime), "ms" );
 };

@@ -28,12 +28,6 @@ td {
     height: 120px;
 }
 
-#candidate {
-    display: block;
-    margin: auto;
-    padding: 15px;
-}
-
 .candidate {
     background: #002b36;
 }
