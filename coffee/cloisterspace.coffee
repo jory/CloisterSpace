@@ -1,6 +1,6 @@
-EDGE_TYPE_CITY = 'city'
+EDGE_TYPE_CITY  = 'city'
 EDGE_TYPE_GRASS = 'grass'
-EDGE_TYPE_ROAD = 'road'
+EDGE_TYPE_ROAD  = 'road'
 
 edgeDefs = {
   'r': EDGE_TYPE_ROAD,
@@ -11,16 +11,49 @@ edgeDefs = {
 
 class Edge
   constructor: (@edge, @road, @city, @grass, @grassEdges) ->
+    @string = 'edge: ' + @edge + ', road: ' + @road + ', city: ' + @city +
+              ', grass: ' + @grass + ', grassEdges: ' + @grassEdges
 
 
 class Tile
-  constructor: (@image, @north, @east, @south, @west, @hasTwoCities, @hasRoadEnd, @isStart) ->
+  constructor: (@image, north, east, south, west, @hasTwoCities, @hasRoadEnd, @isStart) ->
+    @edges =
+      north: north
+      east:  east
+      south: south
+      west:  west
+
     @rotation = 0
-    @rotationClass = ''
+    @rotationClass = 'r0'
+
+
+  rotate: (turns) ->
+    if turns not in [-3..3]
+      throw 'Invalid Rotation'
+
+    if turns is 0
+      return
+
+    switch turns
+      when -1 then turns = 3
+      when -2 then turns = 2
+      when -3 then turns = 1
+
+    @rotation += turns
+    if @rotation > 3
+      @rotation -= 4
+
+    @rotationClass = 'r' + @rotation
+
+    for i in [1..turns]
+      tmp = @edges.north
+      @edges.north = @edges.west
+      @edges.west  = @edges.south
+      @edges.south = @edges.east
+      @edges.east  = tmp
 
 
 generateRandomTileSet = ->
-  startTime = (new Date()).getTime();
 
   # order of edge specs is NESW
   #
@@ -69,27 +102,56 @@ generateRandomTileSet = ->
     hasTwoCities = tile[4] is '11'
 
     edges = tile[3].split('')
-    roadEdges = tile[5].split('')
-    cityEdges = tile[6].split('')
-    grassEdges = tile[7].split('')
+    road  = tile[5].split('')
+    city  = tile[6].split('')
+    grass = tile[7].split('')
 
     roadEdgeCount = (edge for edge in edges when edge is 'r').length
+    hasRoadEnd = roadEdgeCount is (1 or 3 or 4)
 
-    north = new Edge(edgeDefs[edges[0]], roadEdges[0], cityEdges[0], grassEdges[0],
-                     grassEdges[1])
-    east = new Edge(edgeDefs[edges[1]], roadEdges[1], cityEdges[1], grassEdges[2],
-                    grassEdges[3])
-    south = new Edge(edgeDefs[edges[2]], roadEdges[2], cityEdges[2], grassEdges[4],
-                     grassEdges[5])
-    west = new Edge(edgeDefs[edges[3]], roadEdges[3], cityEdges[3], grassEdges[6],
-                    grassEdges[7])
+    north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1])
+    east  = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3])
+    south = new Edge(edgeDefs[edges[2]], road[2], city[2], grass[4], grass[5])
+    west  = new Edge(edgeDefs[edges[3]], road[3], city[3], grass[6], grass[7])
 
     for i in [1..count]
-      new Tile(image, north, east, south, west, hasTwoCities,
-               roadEdgeCount is (1 or 3 or 4), isStart)
+      new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, isStart)
 
   tiles = [].concat tileSets...
 
+  # This operation is ugly, but necessary
   [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
 
+
+createWorldObject = (tiles) ->
+
+  # Pre-condition: tile[0] will be the starting tile.
+  # Post-condition: The starting tile is consumed.
+
+  center = tiles.length
+
+  board = (new Array(center * 2) for i in [1..center * 2])
+  board[center][center] = tiles.shift()
+
+  worldObject =
+    board:  board
+    center: center
+    minrow: center
+    maxrow: center
+    mincol: center
+    maxcol: center
+
+
+findValidPositions = (world, tile) ->
+
+  positions = for row in [world.minrow - 1..world.maxrow + 1]
+    for col in [world.mincol - 1..world.maxcol + 1]
+      occupied = world.board[row][col]
+      if not occupied?
+        console.log(row + ',' + col)
+        # Need to have at least one neighbour that it can connect to,
+        # while having no neighbours that conflict with it.
+
 tiles = generateRandomTileSet()
+world = createWorldObject(tiles)
+findValidPositions(world, tiles[0])
