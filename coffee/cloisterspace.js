@@ -1,19 +1,11 @@
 (function() {
-  var EDGE_TYPE_CITY, EDGE_TYPE_GRASS, EDGE_TYPE_ROAD, Edge, Tile, World, drawTile, edgeDefs, positions, tile, world, _i, _len, _ref;
+  var Edge, Tile, World, drawTile, positions, tile, world, _i, _len, _ref;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
     }
     return -1;
   }, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-  EDGE_TYPE_CITY = 'city';
-  EDGE_TYPE_GRASS = 'grass';
-  EDGE_TYPE_ROAD = 'road';
-  edgeDefs = {
-    'r': EDGE_TYPE_ROAD,
-    'g': EDGE_TYPE_GRASS,
-    'c': EDGE_TYPE_CITY
-  };
   Edge = (function() {
     function Edge(edge, road, city, grass, grassEdges) {
       this.edge = edge;
@@ -110,7 +102,12 @@
       this.placeTile(this.center, this.center, this.tiles.shift());
     }
     World.prototype.generateRandomTileSet = function() {
-      var city, count, east, edge, edges, grass, hasRoadEnd, hasTwoCities, i, image, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
+      var city, count, east, edge, edgeDefs, edges, grass, hasRoadEnd, hasTwoCities, i, image, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
+      edgeDefs = {
+        'r': 'road',
+        'g': 'grass',
+        'c': 'city'
+      };
       tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221', 'city4.png      1   reg   cccc    --  ----    1111    --------', 'road4.png      1   reg   rrrr    --  1234    ----    12233441', 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--', 'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--', 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--', 'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--', 'road3.png      4   reg   grrr    --  -123    ----    11122331', 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--', 'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--', 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111', 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--', 'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--', 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--', 'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--', 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221', 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111', 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--', 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111', 'cloister.png   4   reg   gggg    --  ----    ----    11111111', 'city1.png      5   reg   cggg    --  ----    1---    --111111', 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111', 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221', 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'];
       tileSets = (function() {
         var _i, _len, _results;

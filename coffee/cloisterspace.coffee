@@ -1,14 +1,3 @@
-EDGE_TYPE_CITY  = 'city'
-EDGE_TYPE_GRASS = 'grass'
-EDGE_TYPE_ROAD  = 'road'
-
-edgeDefs = {
-  'r': EDGE_TYPE_ROAD,
-  'g': EDGE_TYPE_GRASS,
-  'c': EDGE_TYPE_CITY
-}
-
-
 class Edge
   constructor: (@edge, @road, @city, @grass, @grassEdges) ->
     @string = 'edge: ' + @edge + ', road: ' + @road + ', city: ' + @city +
@@ -25,6 +14,7 @@ class Tile
 
     @rotation = 0
     @rotationClass = 'r0'
+
 
   rotate: (turns) ->
     if turns not in [-3..3]
@@ -48,8 +38,10 @@ class Tile
         @edges.south = @edges.east
         @edges.east  = tmp
 
+
   reset: ->
     @rotate(4 - @rotation) if @rotation > 0
+
 
   connectableTo: (other, from) ->
     oppositeDirection =
@@ -72,6 +64,7 @@ class World
     @board = (new Array(@center * 2) for i in [1..@center * 2])
     @placeTile(@center, @center, @tiles.shift())
 
+
   generateRandomTileSet: ->
 
     # order of edge specs is NESW
@@ -81,6 +74,11 @@ class World
     # CityMap (order NESW),
     # GrassMap (clockwise-order starting from top-edge on the left side.
     #           Or in compass notation: NNW,NNE,ENE,ESE,SSE,SSW,WSW,WNW)
+
+    edgeDefs =
+      'r': 'road'
+      'g': 'grass'
+      'c': 'city'
 
     tileDefinitions = [
         'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
@@ -191,6 +189,7 @@ class World
 
     candidates
 
+
   placeTile: (row, col, tile) ->
     @board[row][col] = tile
 
@@ -198,6 +197,7 @@ class World
     @minrow = Math.min(@minrow, row)
     @maxcol = Math.max(@maxcol, col)
     @mincol = Math.min(@mincol, col)
+
 
   randomlyPlaceTile: (tile, candidates) ->
     if candidates.length > 0
@@ -207,6 +207,7 @@ class World
       tile.rotate(turns) if turns > 0
 
       @placeTile(row, col, tile)
+
 
   drawBoard: ->
     table = $("<table><tbody></tbody></table>")
