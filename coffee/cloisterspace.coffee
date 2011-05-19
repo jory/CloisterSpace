@@ -26,31 +26,41 @@ class Tile
     @rotation = 0
     @rotationClass = 'r0'
 
-
   rotate: (turns) ->
     if turns not in [-3..3]
       throw 'Invalid Rotation'
 
-    if turns is 0
-      return
+    if turns != 0
+      switch turns
+        when -1 then turns = 3
+        when -2 then turns = 2
+        when -3 then turns = 1
 
-    switch turns
-      when -1 then turns = 3
-      when -2 then turns = 2
-      when -3 then turns = 1
+      @rotation += turns
+      @rotation -= 4 if @rotation > 3
 
-    @rotation += turns
-    if @rotation > 3
-      @rotation -= 4
+      @rotationClass = 'r' + @rotation
 
-    @rotationClass = 'r' + @rotation
+      for i in [1..turns]
+        tmp = @edges.north
+        @edges.north = @edges.west
+        @edges.west  = @edges.south
+        @edges.south = @edges.east
+        @edges.east  = tmp
 
-    for i in [1..turns]
-      tmp = @edges.north
-      @edges.north = @edges.west
-      @edges.west  = @edges.south
-      @edges.south = @edges.east
-      @edges.east  = tmp
+  reset: ->
+    @rotate(4 - @rotation) if @rotation > 0
+
+  connectableTo: (other, from) ->
+    oppositeDirection =
+      "north": "south"
+      "east" : "west"
+      "south": "north"
+      "west" : "east"
+
+    to = oppositeDirection[from]
+
+    @edges[from].edge is other.edges[to].edge
 
 
 generateRandomTileSet = ->
@@ -125,7 +135,7 @@ generateRandomTileSet = ->
 
 createWorldObject = (tiles) ->
 
-  # Pre-condition: tile[0] will be the starting tile.
+  # Pre-condition: tiles[0] will be the starting tile.
   # Post-condition: The starting tile is consumed.
 
   center = tiles.length
@@ -144,14 +154,133 @@ createWorldObject = (tiles) ->
 
 findValidPositions = (world, tile) ->
 
-  positions = for row in [world.minrow - 1..world.maxrow + 1]
+  adjacents =
+    north:
+      row:-1
+      col: 0
+    east:
+      row: 0
+      col: 1
+    south:
+      row: 1
+      col: 0
+    west:
+      row: 0
+      col:-1
+
+  board = world.board
+
+  candidates = []
+
+  for row in [world.minrow - 1..world.maxrow + 1]
     for col in [world.mincol - 1..world.maxcol + 1]
-      occupied = world.board[row][col]
-      if not occupied?
-        console.log(row + ',' + col)
-        # Need to have at least one neighbour that it can connect to,
-        # while having no neighbours that conflict with it.
+      if not board[row][col]?
+        for turns in [0..3]
+
+          tile.rotate(turns)
+
+          valids = 0
+          invalids = 0
+
+          for side, offsets of adjacents
+            other = board[row + offsets.row][col + offsets.col]
+            if other?
+              if tile.connectableTo(other, side)
+                valids++
+              else
+                invalids++
+
+          if valids > 0 and invalids is 0
+            candidates.push([row, col, turns])
+
+          tile.reset()
+
+  # sortedCandidates = (new Array() for i in [0..3])
+
+  # for candidate in candidates
+  #   sortedCandidates[candidate[2]].push(candidate)
+
+  # sortedCandidates
+
+  candidates
+
+
+placeTile = (world, tile, candidateLocations) ->
+  if candidateLocations.length > 0
+    i = Math.round(Math.random() * (candidateLocations.length - 1))
+    [row, col, turns] = candidateLocations[i]
+
+    tile.rotate(turns) if turns > 0
+
+    world.board[row][col] = tile
+
+    world.maxrow = Math.max(world.maxrow, row)
+    world.minrow = Math.min(world.minrow, row)
+    world.maxcol = Math.max(world.maxcol, col)
+    world.mincol = Math.min(world.mincol, col)
+
+
+drawWorld = (world) ->
+
+  board = world.board
+
+  table = $("<table><tbody></tbody></table>")
+  tbody = table.find("tbody")
+
+  for row in [world.minrow - 1..world.maxrow + 1]
+    tr = $("<tr></tr>")
+
+    for col in [world.mincol - 1..world.maxcol + 1]
+      td = $("<td row='" + row + "' col='" + col + "'></td>")
+
+      tile = board[row][col]
+      if tile?
+        td = $("<td row='" + row + "' col='" + col + "'>" +
+               "<img src='img/" + tile.image +
+               "' class='" + tile.rotationClass + "'/></td>")
+
+      tr.append(td)
+
+    tbody.append(tr)
+
+  $("#board").empty().append(table)
+
+
+drawTile = (world, tile, candidateLocations) ->
+
+  $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass)
+
+  candidates = for locations in candidateLocations[tile.rotation]
+    [row, col, rotation] = locations
+    $("td[row=" + row + "][col=" + col + "]").attr('class', 'candidate').click(=>
+      for candidate in candidates
+        candidate.attr('class', '').unbind()
+
+        world[row][col] = tile
+      drawWorld(world)
+    )
+
+  $('#left').unbind().click(->
+    for candidate in candidates
+      candidate.attr('class', '').unbind()
+
+    tile.rotate(-1)
+    drawTile(tile, candidateLocations)
+  )
+
+  $('#right').unbind().click(->
+    for candidate in candidates
+      candidate.attr('class', '').unbind()
+
+    tile.rotate(1)
+    drawTile(tile, candidateLocations)
+  )
 
 tiles = generateRandomTileSet()
 world = createWorldObject(tiles)
-findValidPositions(world, tiles[0])
+
+for tile in tiles
+  positions = findValidPositions(world, tile)
+  placeTile(world, tile, positions)
+
+drawWorld(world)

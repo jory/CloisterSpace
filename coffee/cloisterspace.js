@@ -1,11 +1,11 @@
 (function() {
-  var EDGE_TYPE_CITY, EDGE_TYPE_GRASS, EDGE_TYPE_ROAD, Edge, Tile, createWorldObject, edgeDefs, findValidPositions, generateRandomTileSet, tiles, world;
+  var EDGE_TYPE_CITY, EDGE_TYPE_GRASS, EDGE_TYPE_ROAD, Edge, Tile, createWorldObject, drawTile, drawWorld, edgeDefs, findValidPositions, generateRandomTileSet, placeTile, positions, tile, tiles, world, _i, _len;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
     }
     return -1;
-  };
+  }, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
   EDGE_TYPE_CITY = 'city';
   EDGE_TYPE_GRASS = 'grass';
   EDGE_TYPE_ROAD = 'road';
@@ -49,33 +49,48 @@
       }).apply(this, arguments), turns) < 0) {
         throw 'Invalid Rotation';
       }
-      if (turns === 0) {
-        return;
+      if (turns !== 0) {
+        switch (turns) {
+          case -1:
+            turns = 3;
+            break;
+          case -2:
+            turns = 2;
+            break;
+          case -3:
+            turns = 1;
+        }
+        this.rotation += turns;
+        if (this.rotation > 3) {
+          this.rotation -= 4;
+        }
+        this.rotationClass = 'r' + this.rotation;
+        _results2 = [];
+        for (i = 1; 1 <= turns ? i <= turns : i >= turns; 1 <= turns ? i++ : i--) {
+          tmp = this.edges.north;
+          this.edges.north = this.edges.west;
+          this.edges.west = this.edges.south;
+          this.edges.south = this.edges.east;
+          _results2.push(this.edges.east = tmp);
+        }
+        return _results2;
       }
-      switch (turns) {
-        case -1:
-          turns = 3;
-          break;
-        case -2:
-          turns = 2;
-          break;
-        case -3:
-          turns = 1;
+    };
+    Tile.prototype.reset = function() {
+      if (this.rotation > 0) {
+        return this.rotate(4 - this.rotation);
       }
-      this.rotation += turns;
-      if (this.rotation > 3) {
-        this.rotation -= 4;
-      }
-      this.rotationClass = 'r' + this.rotation;
-      _results2 = [];
-      for (i = 1; 1 <= turns ? i <= turns : i >= turns; 1 <= turns ? i++ : i--) {
-        tmp = this.edges.north;
-        this.edges.north = this.edges.west;
-        this.edges.west = this.edges.south;
-        this.edges.south = this.edges.east;
-        _results2.push(this.edges.east = tmp);
-      }
-      return _results2;
+    };
+    Tile.prototype.connectableTo = function(other, from) {
+      var oppositeDirection, to;
+      oppositeDirection = {
+        "north": "south",
+        "east": "west",
+        "south": "north",
+        "west": "east"
+      };
+      to = oppositeDirection[from];
+      return this.edges[from].edge === other.edges[to].edge;
     };
     return Tile;
   })();
@@ -151,25 +166,136 @@
     };
   };
   findValidPositions = function(world, tile) {
-    var col, occupied, positions, row;
-    return positions = (function() {
-      var _ref, _ref2, _results;
-      _results = [];
-      for (row = _ref = world.minrow - 1, _ref2 = world.maxrow + 1; _ref <= _ref2 ? row <= _ref2 : row >= _ref2; _ref <= _ref2 ? row++ : row--) {
-        _results.push((function() {
-          var _ref3, _ref4, _results2;
-          _results2 = [];
-          for (col = _ref3 = world.mincol - 1, _ref4 = world.maxcol + 1; _ref3 <= _ref4 ? col <= _ref4 : col >= _ref4; _ref3 <= _ref4 ? col++ : col--) {
-            occupied = world.board[row][col];
-            _results2.push(!(occupied != null) ? console.log(row + ',' + col) : void 0);
+    var adjacents, board, candidates, col, invalids, offsets, other, row, side, turns, valids, _ref, _ref2, _ref3, _ref4;
+    adjacents = {
+      north: {
+        row: -1,
+        col: 0
+      },
+      east: {
+        row: 0,
+        col: 1
+      },
+      south: {
+        row: 1,
+        col: 0
+      },
+      west: {
+        row: 0,
+        col: -1
+      }
+    };
+    board = world.board;
+    candidates = [];
+    for (row = _ref = world.minrow - 1, _ref2 = world.maxrow + 1; _ref <= _ref2 ? row <= _ref2 : row >= _ref2; _ref <= _ref2 ? row++ : row--) {
+      for (col = _ref3 = world.mincol - 1, _ref4 = world.maxcol + 1; _ref3 <= _ref4 ? col <= _ref4 : col >= _ref4; _ref3 <= _ref4 ? col++ : col--) {
+        if (!(board[row][col] != null)) {
+          for (turns = 0; turns <= 3; turns++) {
+            tile.rotate(turns);
+            valids = 0;
+            invalids = 0;
+            for (side in adjacents) {
+              offsets = adjacents[side];
+              other = board[row + offsets.row][col + offsets.col];
+              if (other != null) {
+                if (tile.connectableTo(other, side)) {
+                  valids++;
+                } else {
+                  invalids++;
+                }
+              }
+            }
+            if (valids > 0 && invalids === 0) {
+              candidates.push([row, col, turns]);
+            }
+            tile.reset();
           }
-          return _results2;
-        })());
+        }
+      }
+    }
+    return candidates;
+  };
+  placeTile = function(world, tile, candidateLocations) {
+    var col, i, row, turns, _ref;
+    if (candidateLocations.length > 0) {
+      i = Math.round(Math.random() * (candidateLocations.length - 1));
+      _ref = candidateLocations[i], row = _ref[0], col = _ref[1], turns = _ref[2];
+      if (turns > 0) {
+        tile.rotate(turns);
+      }
+      world.board[row][col] = tile;
+      world.maxrow = Math.max(world.maxrow, row);
+      world.minrow = Math.min(world.minrow, row);
+      world.maxcol = Math.max(world.maxcol, col);
+      return world.mincol = Math.min(world.mincol, col);
+    }
+  };
+  drawWorld = function(world) {
+    var board, col, row, table, tbody, td, tile, tr, _ref, _ref2, _ref3, _ref4;
+    board = world.board;
+    table = $("<table><tbody></tbody></table>");
+    tbody = table.find("tbody");
+    for (row = _ref = world.minrow - 1, _ref2 = world.maxrow + 1; _ref <= _ref2 ? row <= _ref2 : row >= _ref2; _ref <= _ref2 ? row++ : row--) {
+      tr = $("<tr></tr>");
+      for (col = _ref3 = world.mincol - 1, _ref4 = world.maxcol + 1; _ref3 <= _ref4 ? col <= _ref4 : col >= _ref4; _ref3 <= _ref4 ? col++ : col--) {
+        td = $("<td row='" + row + "' col='" + col + "'></td>");
+        tile = board[row][col];
+        if (tile != null) {
+          td = $("<td row='" + row + "' col='" + col + "'>" + "<img src='img/" + tile.image + "' class='" + tile.rotationClass + "'/></td>");
+        }
+        tr.append(td);
+      }
+      tbody.append(tr);
+    }
+    return $("#board").empty().append(table);
+  };
+  drawTile = function(world, tile, candidateLocations) {
+    var candidates, col, locations, rotation, row;
+    $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass);
+    candidates = (function() {
+      var _i, _len, _ref, _results;
+      _ref = candidateLocations[tile.rotation];
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        locations = _ref[_i];
+        row = locations[0], col = locations[1], rotation = locations[2];
+        _results.push($("td[row=" + row + "][col=" + col + "]").attr('class', 'candidate').click(__bind(function() {
+          var candidate, _j, _len2;
+          for (_j = 0, _len2 = candidates.length; _j < _len2; _j++) {
+            candidate = candidates[_j];
+            candidate.attr('class', '').unbind();
+            world[row][col] = tile;
+          }
+          return drawWorld(world);
+        }, this)));
       }
       return _results;
-    })();
+    }).call(this);
+    $('#left').unbind().click(function() {
+      var candidate, _i, _len;
+      for (_i = 0, _len = candidates.length; _i < _len; _i++) {
+        candidate = candidates[_i];
+        candidate.attr('class', '').unbind();
+      }
+      tile.rotate(-1);
+      return drawTile(tile, candidateLocations);
+    });
+    return $('#right').unbind().click(function() {
+      var candidate, _i, _len;
+      for (_i = 0, _len = candidates.length; _i < _len; _i++) {
+        candidate = candidates[_i];
+        candidate.attr('class', '').unbind();
+      }
+      tile.rotate(1);
+      return drawTile(tile, candidateLocations);
+    });
   };
   tiles = generateRandomTileSet();
   world = createWorldObject(tiles);
-  findValidPositions(world, tiles[0]);
+  for (_i = 0, _len = tiles.length; _i < _len; _i++) {
+    tile = tiles[_i];
+    positions = findValidPositions(world, tile);
+    placeTile(world, tile, positions);
+  }
+  drawWorld(world);
 }).call(this);
