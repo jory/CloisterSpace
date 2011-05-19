@@ -63,187 +63,167 @@ class Tile
     @edges[from].edge is other.edges[to].edge
 
 
-generateRandomTileSet = ->
+class World
+  constructor: ->
+    @tiles = @generateRandomTileSet()
 
-  # order of edge specs is NESW
-  #
-  # More edge details:
-  # RoadMap (order NESW),
-  # CityMap (order NESW),
-  # GrassMap (clockwise-order starting from top-edge on the left side.
-  #           Or in compass notation: NNW,NNE,ENE,ESE,SSE,SSW,WSW,WNW)
+    @center = @minrow = @maxrow = @mincol = @maxcol = @tiles.length
 
-  tileDefinitions = [
-      'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
-      'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
-      'city4.png      1   reg   cccc    --  ----    1111    --------',
-      'road4.png      1   reg   rrrr    --  1234    ----    12233441',
-      'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
-      'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
-      'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
-      'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
-      'road3.png      4   reg   grrr    --  -123    ----    11122331',
-      'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
-      'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
-      'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
-      'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
-      'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
-      'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
-      'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
-      'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
-      'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
-      'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
-      'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
-      'cloister.png   4   reg   gggg    --  ----    ----    11111111',
-      'city1.png      5   reg   cggg    --  ----    1---    --111111',
-      'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
-      'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
-      'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
-    ]
+    @board = (new Array(@center * 2) for i in [1..@center * 2])
+    @placeTile(@center, @center, @tiles.shift())
 
-  tileSets = for tileDef in tileDefinitions
-    regExp = RegExp(' +', 'g')
-    tile = tileDef.replace(regExp, ' ').split(' ')
+  generateRandomTileSet: ->
 
-    count = tile[1]
+    # order of edge specs is NESW
+    #
+    # More edge details:
+    # RoadMap (order NESW),
+    # CityMap (order NESW),
+    # GrassMap (clockwise-order starting from top-edge on the left side.
+    #           Or in compass notation: NNW,NNE,ENE,ESE,SSE,SSW,WSW,WNW)
 
-    image = tile[0]
-    isStart = tile[2] is 'start'
-    hasTwoCities = tile[4] is '11'
+    tileDefinitions = [
+        'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
+        'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
+        'city4.png      1   reg   cccc    --  ----    1111    --------',
+        'road4.png      1   reg   rrrr    --  1234    ----    12233441',
+        'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
+        'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
+        'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
+        'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
+        'road3.png      4   reg   grrr    --  -123    ----    11122331',
+        'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
+        'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
+        'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
+        'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
+        'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
+        'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
+        'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
+        'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
+        'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
+        'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
+        'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
+        'cloister.png   4   reg   gggg    --  ----    ----    11111111',
+        'city1.png      5   reg   cggg    --  ----    1---    --111111',
+        'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
+        'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
+        'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
+      ]
 
-    edges = tile[3].split('')
-    road  = tile[5].split('')
-    city  = tile[6].split('')
-    grass = tile[7].split('')
+    tileSets = for tileDef in tileDefinitions
+      regExp = RegExp(' +', 'g')
+      tile = tileDef.replace(regExp, ' ').split(' ')
 
-    roadEdgeCount = (edge for edge in edges when edge is 'r').length
-    hasRoadEnd = roadEdgeCount is (1 or 3 or 4)
+      count = tile[1]
 
-    north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1])
-    east  = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3])
-    south = new Edge(edgeDefs[edges[2]], road[2], city[2], grass[4], grass[5])
-    west  = new Edge(edgeDefs[edges[3]], road[3], city[3], grass[6], grass[7])
+      image = tile[0]
+      isStart = tile[2] is 'start'
+      hasTwoCities = tile[4] is '11'
 
-    for i in [1..count]
-      new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, isStart)
+      edges = tile[3].split('')
+      road  = tile[5].split('')
+      city  = tile[6].split('')
+      grass = tile[7].split('')
 
-  tiles = [].concat tileSets...
+      roadEdgeCount = (edge for edge in edges when edge is 'r').length
+      hasRoadEnd = roadEdgeCount is (1 or 3 or 4)
 
-  # This operation is ugly, but necessary
-  [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
+      north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1])
+      east  = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3])
+      south = new Edge(edgeDefs[edges[2]], road[2], city[2], grass[4], grass[5])
+      west  = new Edge(edgeDefs[edges[3]], road[3], city[3], grass[6], grass[7])
 
+      for i in [1..count]
+        new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, isStart)
 
-createWorldObject = (tiles) ->
+    tiles = [].concat tileSets...
 
-  # Pre-condition: tiles[0] will be the starting tile.
-  # Post-condition: The starting tile is consumed.
-
-  center = tiles.length
-
-  board = (new Array(center * 2) for i in [1..center * 2])
-  board[center][center] = tiles.shift()
-
-  worldObject =
-    board:  board
-    center: center
-    minrow: center
-    maxrow: center
-    mincol: center
-    maxcol: center
+    # This operation is ugly, but necessary
+    [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
 
 
-findValidPositions = (world, tile) ->
+  findValidPositions: (tile) ->
+    adjacents =
+      north:
+        row:-1
+        col: 0
+      east:
+        row: 0
+        col: 1
+      south:
+        row: 1
+        col: 0
+      west:
+        row: 0
+        col:-1
 
-  adjacents =
-    north:
-      row:-1
-      col: 0
-    east:
-      row: 0
-      col: 1
-    south:
-      row: 1
-      col: 0
-    west:
-      row: 0
-      col:-1
+    candidates = []
 
-  board = world.board
+    for row in [@minrow - 1..@maxrow + 1]
+      for col in [@mincol - 1..@maxcol + 1]
+        if not @board[row][col]?
+          for turns in [0..3]
 
-  candidates = []
+            tile.rotate(turns)
 
-  for row in [world.minrow - 1..world.maxrow + 1]
-    for col in [world.mincol - 1..world.maxcol + 1]
-      if not board[row][col]?
-        for turns in [0..3]
+            valids = 0
+            invalids = 0
 
-          tile.rotate(turns)
+            for side, offsets of adjacents
+              other = @board[row + offsets.row][col + offsets.col]
+              if other?
+                if tile.connectableTo(other, side)
+                  valids++
+                else
+                  invalids++
 
-          valids = 0
-          invalids = 0
+            if valids > 0 and invalids is 0
+              candidates.push([row, col, turns])
 
-          for side, offsets of adjacents
-            other = board[row + offsets.row][col + offsets.col]
-            if other?
-              if tile.connectableTo(other, side)
-                valids++
-              else
-                invalids++
+            tile.reset()
 
-          if valids > 0 and invalids is 0
-            candidates.push([row, col, turns])
+    # sortedCandidates = (new Array() for i in [0..3])
 
-          tile.reset()
+    # for candidate in candidates
+    #   sortedCandidates[candidate[2]].push(candidate)
 
-  # sortedCandidates = (new Array() for i in [0..3])
+    # sortedCandidates
 
-  # for candidate in candidates
-  #   sortedCandidates[candidate[2]].push(candidate)
+    candidates
 
-  # sortedCandidates
+  placeTile: (row, col, tile) ->
+    @board[row][col] = tile
 
-  candidates
+    @maxrow = Math.max(@maxrow, row)
+    @minrow = Math.min(@minrow, row)
+    @maxcol = Math.max(@maxcol, col)
+    @mincol = Math.min(@mincol, col)
 
+  randomlyPlaceTile: (tile, candidates) ->
+    if candidates.length > 0
+      i = Math.round(Math.random() * (candidates.length - 1))
+      [row, col, turns] = candidates[i]
 
-placeTile = (world, tile, candidateLocations) ->
-  if candidateLocations.length > 0
-    i = Math.round(Math.random() * (candidateLocations.length - 1))
-    [row, col, turns] = candidateLocations[i]
+      tile.rotate(turns) if turns > 0
 
-    tile.rotate(turns) if turns > 0
+      @placeTile(row, col, tile)
 
-    world.board[row][col] = tile
+  drawBoard: ->
+    table = $("<table><tbody></tbody></table>")
+    tbody = table.find("tbody")
 
-    world.maxrow = Math.max(world.maxrow, row)
-    world.minrow = Math.min(world.minrow, row)
-    world.maxcol = Math.max(world.maxcol, col)
-    world.mincol = Math.min(world.mincol, col)
-
-
-drawWorld = (world) ->
-
-  board = world.board
-
-  table = $("<table><tbody></tbody></table>")
-  tbody = table.find("tbody")
-
-  for row in [world.minrow - 1..world.maxrow + 1]
-    tr = $("<tr></tr>")
-
-    for col in [world.mincol - 1..world.maxcol + 1]
-      td = $("<td row='" + row + "' col='" + col + "'></td>")
-
-      tile = board[row][col]
-      if tile?
-        td = $("<td row='" + row + "' col='" + col + "'>" +
-               "<img src='img/" + tile.image +
-               "' class='" + tile.rotationClass + "'/></td>")
-
-      tr.append(td)
-
-    tbody.append(tr)
-
-  $("#board").empty().append(table)
+    for row in [@minrow - 1..@maxrow + 1]
+      tr = $("<tr></tr>")
+      for col in [@mincol - 1..@maxcol + 1]
+        td = $("<td row='" + row + "' col='" + col + "'></td>")
+        tile = @board[row][col]
+        if tile?
+          td = $("<td row='" + row + "' col='" + col + "'>" +
+                 "<img src='img/" + tile.image +
+                 "' class='" + tile.rotationClass + "'/></td>")
+        tr.append(td)
+      tbody.append(tr)
+    $("#board").empty().append(table)
 
 
 drawTile = (world, tile, candidateLocations) ->
@@ -276,11 +256,10 @@ drawTile = (world, tile, candidateLocations) ->
     drawTile(tile, candidateLocations)
   )
 
-tiles = generateRandomTileSet()
-world = createWorldObject(tiles)
+world = new World()
 
-for tile in tiles
-  positions = findValidPositions(world, tile)
-  placeTile(world, tile, positions)
+for tile in world.tiles
+  positions = world.findValidPositions(tile)
+  world.randomlyPlaceTile(tile, positions)
 
-drawWorld(world)
+world.drawBoard()
