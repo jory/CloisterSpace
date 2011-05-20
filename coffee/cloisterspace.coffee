@@ -180,14 +180,12 @@ class World
 
             tile.reset()
 
-    # sortedCandidates = (new Array() for i in [0..3])
+    sortedCandidates = (new Array() for i in [0..3])
 
-    # for candidate in candidates
-    #   sortedCandidates[candidate[2]].push(candidate)
+    for candidate in candidates
+      sortedCandidates[candidate[2]].push(candidate)
 
-    # sortedCandidates
-
-    candidates
+    sortedCandidates
 
 
   placeTile: (row, col, tile) ->
@@ -200,6 +198,8 @@ class World
 
 
   randomlyPlaceTile: (tile, candidates) ->
+    candidates = [].concat candidates...
+
     if candidates.length > 0
       i = Math.round(Math.random() * (candidates.length - 1))
       [row, col, turns] = candidates[i]
@@ -227,40 +227,47 @@ class World
     $("#board").empty().append(table)
 
 
-drawTile = (world, tile, candidateLocations) ->
+  next: ->
+    if @tiles.length > 0
+      tile = @tiles.shift()
+      candidates = @findValidPositions(tile)
+      @drawCandidates(tile, candidates)
 
-  $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass)
 
-  candidates = for locations in candidateLocations[tile.rotation]
-    [row, col, rotation] = locations
-    $("td[row=" + row + "][col=" + col + "]").attr('class', 'candidate').click(=>
-      for candidate in candidates
-        candidate.attr('class', '').unbind()
+  drawCandidates: (tile, candidates) ->
+    $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass)
 
-        world[row][col] = tile
-      drawWorld(world)
+    attach = (cell, row, col) =>
+      cell.unbind().click(=>
+
+        for item in actives
+          item.attr('class', '').unbind()
+
+        @placeTile(row, col, tile)
+        @drawBoard()
+        @next()
+      ).attr('class', 'candidate')
+
+    actives = for candidate in candidates[tile.rotation]
+      [row, col] = candidate
+      attach($('td[row=' + row + '][col=' + col + ']'), row, col)
+
+    $('#left').unbind().click(=>
+      for item in actives
+        item.attr('class', '').unbind()
+
+      tile.rotate(-1)
+      @drawCandidates(tile, candidates)
     )
 
-  $('#left').unbind().click(->
-    for candidate in candidates
-      candidate.attr('class', '').unbind()
+    $('#right').unbind().click(=>
+      for item in actives
+        item.attr('class', '').unbind()
 
-    tile.rotate(-1)
-    drawTile(tile, candidateLocations)
-  )
-
-  $('#right').unbind().click(->
-    for candidate in candidates
-      candidate.attr('class', '').unbind()
-
-    tile.rotate(1)
-    drawTile(tile, candidateLocations)
-  )
+      tile.rotate(1)
+      @drawCandidates(tile, candidates)
+    )
 
 world = new World()
-
-for tile in world.tiles
-  positions = world.findValidPositions(tile)
-  world.randomlyPlaceTile(tile, positions)
-
 world.drawBoard()
+world.next()

@@ -1,5 +1,5 @@
 (function() {
-  var Edge, Tile, World, drawTile, positions, tile, world, _i, _len, _ref;
+  var Edge, Tile, World, world;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -157,7 +157,7 @@
       }));
     };
     World.prototype.findValidPositions = function(tile) {
-      var adjacents, candidates, col, invalids, offsets, other, row, side, turns, valids, _ref, _ref2, _ref3, _ref4;
+      var adjacents, candidate, candidates, col, i, invalids, offsets, other, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4;
       adjacents = {
         north: {
           row: -1,
@@ -203,7 +203,19 @@
           }
         }
       }
-      return candidates;
+      sortedCandidates = (function() {
+        var _results;
+        _results = [];
+        for (i = 0; i <= 3; i++) {
+          _results.push(new Array());
+        }
+        return _results;
+      })();
+      for (_i = 0, _len = candidates.length; _i < _len; _i++) {
+        candidate = candidates[_i];
+        sortedCandidates[candidate[2]].push(candidate);
+      }
+      return sortedCandidates;
     };
     World.prototype.placeTile = function(row, col, tile) {
       this.board[row][col] = tile;
@@ -213,10 +225,11 @@
       return this.mincol = Math.min(this.mincol, col);
     };
     World.prototype.randomlyPlaceTile = function(tile, candidates) {
-      var col, i, row, turns, _ref;
+      var col, i, row, turns, _ref, _ref2;
+      candidates = (_ref = []).concat.apply(_ref, candidates);
       if (candidates.length > 0) {
         i = Math.round(Math.random() * (candidates.length - 1));
-        _ref = candidates[i], row = _ref[0], col = _ref[1], turns = _ref[2];
+        _ref2 = candidates[i], row = _ref2[0], col = _ref2[1], turns = _ref2[2];
         if (turns > 0) {
           tile.rotate(turns);
         }
@@ -241,55 +254,62 @@
       }
       return $("#board").empty().append(table);
     };
+    World.prototype.next = function() {
+      var candidates, tile;
+      if (this.tiles.length > 0) {
+        tile = this.tiles.shift();
+        candidates = this.findValidPositions(tile);
+        return this.drawCandidates(tile, candidates);
+      }
+    };
+    World.prototype.drawCandidates = function(tile, candidates) {
+      var actives, attach, candidate, col, row;
+      $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass);
+      attach = __bind(function(cell, row, col) {
+        return cell.unbind().click(__bind(function() {
+          var item, _i, _len;
+          for (_i = 0, _len = actives.length; _i < _len; _i++) {
+            item = actives[_i];
+            item.attr('class', '').unbind();
+          }
+          this.placeTile(row, col, tile);
+          this.drawBoard();
+          return this.next();
+        }, this)).attr('class', 'candidate');
+      }, this);
+      actives = (function() {
+        var _i, _len, _ref, _results;
+        _ref = candidates[tile.rotation];
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          candidate = _ref[_i];
+          row = candidate[0], col = candidate[1];
+          _results.push(attach($('td[row=' + row + '][col=' + col + ']'), row, col));
+        }
+        return _results;
+      })();
+      $('#left').unbind().click(__bind(function() {
+        var item, _i, _len;
+        for (_i = 0, _len = actives.length; _i < _len; _i++) {
+          item = actives[_i];
+          item.attr('class', '').unbind();
+        }
+        tile.rotate(-1);
+        return this.drawCandidates(tile, candidates);
+      }, this));
+      return $('#right').unbind().click(__bind(function() {
+        var item, _i, _len;
+        for (_i = 0, _len = actives.length; _i < _len; _i++) {
+          item = actives[_i];
+          item.attr('class', '').unbind();
+        }
+        tile.rotate(1);
+        return this.drawCandidates(tile, candidates);
+      }, this));
+    };
     return World;
   })();
-  drawTile = function(world, tile, candidateLocations) {
-    var candidates, col, locations, rotation, row;
-    $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass);
-    candidates = (function() {
-      var _i, _len, _ref, _results;
-      _ref = candidateLocations[tile.rotation];
-      _results = [];
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        locations = _ref[_i];
-        row = locations[0], col = locations[1], rotation = locations[2];
-        _results.push($("td[row=" + row + "][col=" + col + "]").attr('class', 'candidate').click(__bind(function() {
-          var candidate, _j, _len2;
-          for (_j = 0, _len2 = candidates.length; _j < _len2; _j++) {
-            candidate = candidates[_j];
-            candidate.attr('class', '').unbind();
-            world[row][col] = tile;
-          }
-          return drawWorld(world);
-        }, this)));
-      }
-      return _results;
-    }).call(this);
-    $('#left').unbind().click(function() {
-      var candidate, _i, _len;
-      for (_i = 0, _len = candidates.length; _i < _len; _i++) {
-        candidate = candidates[_i];
-        candidate.attr('class', '').unbind();
-      }
-      tile.rotate(-1);
-      return drawTile(tile, candidateLocations);
-    });
-    return $('#right').unbind().click(function() {
-      var candidate, _i, _len;
-      for (_i = 0, _len = candidates.length; _i < _len; _i++) {
-        candidate = candidates[_i];
-        candidate.attr('class', '').unbind();
-      }
-      tile.rotate(1);
-      return drawTile(tile, candidateLocations);
-    });
-  };
   world = new World();
-  _ref = world.tiles;
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    tile = _ref[_i];
-    positions = world.findValidPositions(tile);
-    world.randomlyPlaceTile(tile, positions);
-  }
   world.drawBoard();
+  world.next();
 }).call(this);
