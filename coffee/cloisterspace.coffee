@@ -1,7 +1,7 @@
 class Edge
-  constructor: (@edge, @road, @city, @grass, @grassEdges) ->
-    @string = 'edge: ' + @edge + ', road: ' + @road + ', city: ' + @city +
-              ', grass: ' + @grass + ', grassEdges: ' + @grassEdges
+  constructor: (@type, @road, @city, @grassA, @grassB) ->
+    @string = 'type: ' + @type + ', road: ' + @road + ', city: ' + @city +
+              ', grassA: ' + @grassA + ', grassB: ' + @grassB
 
 
 class Tile
@@ -15,12 +15,17 @@ class Tile
     @rotation = 0
     @rotationClass = 'r0'
 
+  oppositeDirection =
+    "north": "south"
+    "east" : "west"
+    "south": "north"
+    "west" : "east"
 
   rotate: (turns) ->
     if turns not in [-3..3]
       throw 'Invalid Rotation'
 
-    if turns != 0
+    if turns isnt 0
       switch turns
         when -1 then turns = 3
         when -2 then turns = 2
@@ -38,21 +43,51 @@ class Tile
         @edges.south = @edges.east
         @edges.east  = tmp
 
-
   reset: ->
     @rotate(4 - @rotation) if @rotation > 0
 
-
   connectableTo: (other, from) ->
-    oppositeDirection =
-      "north": "south"
-      "east" : "west"
-      "south": "north"
-      "west" : "east"
-
     to = oppositeDirection[from]
+    @edges[from].type is other.edges[to].type
 
-    @edges[from].edge is other.edges[to].edge
+
+class Road
+  constructor: (row, col, edge, id, hasEnd) ->
+    address = row + ',' + col
+
+    @tiles = {}
+    @tiles[address] = true
+
+    @ids = {}
+    @ids[address + ',' + id] = true
+
+    @edges = {}
+    @edges[address + ',' + edge] = true
+
+    @length = 1
+
+    @numEnds = if hasEnd then 1 else 0
+
+    @finished = false
+
+  add: (row, col, edge, id, hasEnd) ->
+    address = row + ',' + col
+
+    if not @tiles[address]
+      @length += 1
+      @tiles[address] = true
+
+    @ids[address + ',' + id] = true
+
+    @edges[address + ',' + edge] = true
+
+    if hasEnd
+      @numEnds += 1
+      if @numEnds is 2
+        @finished = true
+
+  has: (row, col, id) ->
+    @ids[row + ',' + col + ',' + id]
 
 
 class World
@@ -61,9 +96,12 @@ class World
 
     @center = @minrow = @maxrow = @mincol = @maxcol = @tiles.length
 
+    @roads = []
+    @cities = []
+    @farms = []
+
     @board = (new Array(@center * 2) for i in [1..@center * 2])
     @placeTile(@center, @center, [], @tiles.shift())
-
 
   adjacents =
     north:
@@ -79,9 +117,13 @@ class World
       row: 0
       col:-1
 
+  oppositeDirection =
+    "north": "south"
+    "east" : "west"
+    "south": "north"
+    "west" : "east"
 
   generateRandomTileSet: ->
-
     # order of edge specs is NESW
     #
     # More edge details:
@@ -154,7 +196,6 @@ class World
     # This operation is ugly, but necessary
     [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
 
-
   findValidPositions: (tile) ->
     candidates = []
 
@@ -188,10 +229,8 @@ class World
 
     sortedCandidates
 
-
   placeTile: (row, col, neighbours, tile) ->
-
-    if neighbours.length is 0 and ! tile.isStart
+    if neighbours.length is 0 and not tile.isStart
       throw "Invalid tile placement"
 
     @board[row][col] = tile
@@ -201,11 +240,59 @@ class World
     @maxcol = Math.max(@maxcol, col)
     @mincol = Math.min(@mincol, col)
 
+    handled =
+      north: false
+      south: false
+      east:  false
+      west:  false
+
     # Connect the features of the current tile to the world-level features.
 
-    # If you can't find an adjacent, you're either the first tile, or
-    # the tile is being placed erroneously.
-    # What if placeTile gets the adjacent tiles passed in as well...
+    for dir in neighbours
+      edge = tile.edges[dir]
+
+      console.log('neighbour: ' + dir)
+      console.log(edge.string)
+
+      offsets = adjacents[dir]
+      otherRow = row + offsets.row
+      otherCol = col + offsets.col
+      neighbour = @board[otherRow][otherCol]
+      otherEdge = neighbour.edges[oppositeDirection[dir]]
+
+      # We know what kind of features we're connecting to, because the
+      # edge can only validly connect to a similar edge.
+      added = false
+
+      if edge.type is 'road'
+        for road in @roads
+          if not added and road.has(otherRow, otherCol, otherEdge.road)
+            road.add(row, col, dir, edge.road, edge.hasRoadEnd)
+            added = true
+
+      handled[dir] = true
+
+    for dir, seen of handled
+      if not seen
+        edge = tile.edges[dir]
+
+        console.log('not-seen: ' + dir)
+        console.log(edge.string)
+
+        # either attach my features to existing ones on the current tile,
+        # or create new features.
+        added = false
+
+        if edge.type is 'road'
+          for road in @roads
+            if not added and road.has(row, col, edge.road)
+              road.add(row, col, dir, edge.road, edge.hasRoadEnd)
+              added = true
+
+          if not added
+              @roads.push(new Road(row, col, dir, edge.road, edge.hasRoadEnd))
+
+    console.log('---------------------------------------------------------')
 
     # Keeping track of roads, cities and farms:
     #
@@ -215,6 +302,15 @@ class World
     #  - roads must have two ends.
     #
     #  - farms... are complicated
+    #
+    #  - indexing: row, col, edge, feature-index.
+    #    A useful way to query would be (row, col, feature-index).
+    #
+    #  Road object:
+    #   hasTwoEnds
+    #   hasOneEnd
+    #   length
+    #   sections (row, col, edge?, feature-index)
     #
     # Pseudo:
     #
@@ -228,7 +324,6 @@ class World
     #   If ! hasRoadEnd, the other edge with a road is connected to the current one.
     #   Else, each road edge belongs to its own (potentially pre-existing) road.
 
-
   randomlyPlaceTile: (tile, candidates) ->
     candidates = [].concat candidates...
 
@@ -239,7 +334,6 @@ class World
       tile.rotate(turns) if turns > 0
 
       @placeTile(row, col, neighbours, tile)
-
 
   drawBoard: ->
     table = $("<table><tbody></tbody></table>")
@@ -258,13 +352,11 @@ class World
       tbody.append(tr)
     $("#board").empty().append(table)
 
-
   next: ->
     if @tiles.length > 0
       tile = @tiles.shift()
       candidates = @findValidPositions(tile)
       @drawCandidates(tile, candidates)
-
 
   drawCandidates: (tile, candidates) ->
     $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass)
