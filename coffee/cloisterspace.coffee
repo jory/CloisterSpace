@@ -89,6 +89,12 @@ class Road
   has: (row, col, id) ->
     @ids[row + ',' + col + ',' + id]
 
+  toString: ->
+    out = "Road: ("
+    for address of @tiles
+      out += address + "; "
+    out.slice(0, -2) + "), length: " + @length + ", numEnds: " + @numEnds + ", finished: " + @finished
+
 
 class World
   constructor: ->
@@ -251,9 +257,6 @@ class World
     for dir in neighbours
       edge = tile.edges[dir]
 
-      console.log('neighbour: ' + dir)
-      console.log(edge.string)
-
       offsets = adjacents[dir]
       otherRow = row + offsets.row
       otherCol = col + offsets.col
@@ -267,7 +270,7 @@ class World
       if edge.type is 'road'
         for road in @roads
           if not added and road.has(otherRow, otherCol, otherEdge.road)
-            road.add(row, col, dir, edge.road, edge.hasRoadEnd)
+            road.add(row, col, dir, edge.road, tile.hasRoadEnd)
             added = true
 
       handled[dir] = true
@@ -276,9 +279,6 @@ class World
       if not seen
         edge = tile.edges[dir]
 
-        console.log('not-seen: ' + dir)
-        console.log(edge.string)
-
         # either attach my features to existing ones on the current tile,
         # or create new features.
         added = false
@@ -286,13 +286,11 @@ class World
         if edge.type is 'road'
           for road in @roads
             if not added and road.has(row, col, edge.road)
-              road.add(row, col, dir, edge.road, edge.hasRoadEnd)
+              road.add(row, col, dir, edge.road, tile.hasRoadEnd)
               added = true
 
           if not added
-              @roads.push(new Road(row, col, dir, edge.road, edge.hasRoadEnd))
-
-    console.log('---------------------------------------------------------')
+              @roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd))
 
     # Keeping track of roads, cities and farms:
     #

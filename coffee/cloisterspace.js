@@ -120,6 +120,14 @@
     Road.prototype.has = function(row, col, id) {
       return this.ids[row + ',' + col + ',' + id];
     };
+    Road.prototype.toString = function() {
+      var address, out;
+      out = "Road: (";
+      for (address in this.tiles) {
+        out += address + "; ";
+      }
+      return out.slice(0, -2) + "), length: " + this.length + ", numEnds: " + this.numEnds + ", finished: " + this.finished;
+    };
     return Road;
   })();
   World = (function() {
@@ -264,7 +272,7 @@
       return sortedCandidates;
     };
     World.prototype.placeTile = function(row, col, neighbours, tile) {
-      var added, dir, edge, handled, neighbour, offsets, otherCol, otherEdge, otherRow, road, seen, _i, _j, _k, _len, _len2, _len3, _ref, _ref2;
+      var added, dir, edge, handled, neighbour, offsets, otherCol, otherEdge, otherRow, road, seen, _i, _j, _len, _len2, _ref, _results;
       if (neighbours.length === 0 && !tile.isStart) {
         throw "Invalid tile placement";
       }
@@ -282,8 +290,6 @@
       for (_i = 0, _len = neighbours.length; _i < _len; _i++) {
         dir = neighbours[_i];
         edge = tile.edges[dir];
-        console.log('neighbour: ' + dir);
-        console.log(edge.string);
         offsets = adjacents[dir];
         otherRow = row + offsets.row;
         otherCol = col + offsets.col;
@@ -295,36 +301,38 @@
           for (_j = 0, _len2 = _ref.length; _j < _len2; _j++) {
             road = _ref[_j];
             if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
-              road.add(row, col, dir, edge.road, edge.hasRoadEnd);
+              road.add(row, col, dir, edge.road, tile.hasRoadEnd);
               added = true;
             }
           }
         }
         handled[dir] = true;
       }
+      _results = [];
       for (dir in handled) {
         seen = handled[dir];
-        if (!seen) {
-          edge = tile.edges[dir];
-          console.log('not-seen: ' + dir);
-          console.log(edge.string);
-          added = false;
-          if (edge.type === 'road') {
-            _ref2 = this.roads;
-            for (_k = 0, _len3 = _ref2.length; _k < _len3; _k++) {
-              road = _ref2[_k];
-              if (!added && road.has(row, col, edge.road)) {
-                road.add(row, col, dir, edge.road, edge.hasRoadEnd);
-                added = true;
+        _results.push((function() {
+          var _k, _len3, _ref2;
+          if (!seen) {
+            edge = tile.edges[dir];
+            added = false;
+            if (edge.type === 'road') {
+              _ref2 = this.roads;
+              for (_k = 0, _len3 = _ref2.length; _k < _len3; _k++) {
+                road = _ref2[_k];
+                if (!added && road.has(row, col, edge.road)) {
+                  road.add(row, col, dir, edge.road, tile.hasRoadEnd);
+                  added = true;
+                }
+              }
+              if (!added) {
+                return this.roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd));
               }
             }
-            if (!added) {
-              this.roads.push(new Road(row, col, dir, edge.road, edge.hasRoadEnd));
-            }
           }
-        }
+        }).call(this));
       }
-      return console.log('---------------------------------------------------------');
+      return _results;
     };
     World.prototype.randomlyPlaceTile = function(tile, candidates) {
       var col, i, neighbours, row, turns, _ref, _ref2;
