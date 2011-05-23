@@ -124,7 +124,7 @@ class World
       grass = tile[7].split('')
 
       roadEdgeCount = (edge for edge in edges when edge is 'r').length
-      hasRoadEnd = roadEdgeCount is (1 or 3 or 4)
+      hasRoadEnd = (roadEdgeCount is 1 or roadEdgeCount is 3 or roadEdgeCount is 4)
 
       north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1])
       east  = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3])
