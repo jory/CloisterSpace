@@ -87,6 +87,7 @@
     return Tile;
   })();
   World = (function() {
+    var adjacents;
     function World() {
       var i;
       this.tiles = this.generateRandomTileSet();
@@ -99,8 +100,26 @@
         }
         return _results;
       }).call(this);
-      this.placeTile(this.center, this.center, this.tiles.shift());
+      this.placeTile(this.center, this.center, [], this.tiles.shift());
     }
+    adjacents = {
+      north: {
+        row: -1,
+        col: 0
+      },
+      east: {
+        row: 0,
+        col: 1
+      },
+      south: {
+        row: 1,
+        col: 0
+      },
+      west: {
+        row: 0,
+        col: -1
+      }
+    };
     World.prototype.generateRandomTileSet = function() {
       var city, count, east, edge, edgeDefs, edges, grass, hasRoadEnd, hasTwoCities, i, image, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
       edgeDefs = {
@@ -135,7 +154,7 @@
             }
             return _results2;
           })()).length;
-          hasRoadEnd = roadEdgeCount === (1 || 3 || 4);
+          hasRoadEnd = roadEdgeCount === 1 || roadEdgeCount === 3 || roadEdgeCount === 4;
           north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1]);
           east = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3]);
           south = new Edge(edgeDefs[edges[2]], road[2], city[2], grass[4], grass[5]);
@@ -157,46 +176,28 @@
       }));
     };
     World.prototype.findValidPositions = function(tile) {
-      var adjacents, candidate, candidates, col, i, invalids, offsets, other, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4;
-      adjacents = {
-        north: {
-          row: -1,
-          col: 0
-        },
-        east: {
-          row: 0,
-          col: 1
-        },
-        south: {
-          row: 1,
-          col: 0
-        },
-        west: {
-          row: 0,
-          col: -1
-        }
-      };
+      var candidate, candidates, col, i, invalids, offsets, other, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4;
       candidates = [];
       for (row = _ref = this.minrow - 1, _ref2 = this.maxrow + 1; _ref <= _ref2 ? row <= _ref2 : row >= _ref2; _ref <= _ref2 ? row++ : row--) {
         for (col = _ref3 = this.mincol - 1, _ref4 = this.maxcol + 1; _ref3 <= _ref4 ? col <= _ref4 : col >= _ref4; _ref3 <= _ref4 ? col++ : col--) {
           if (!(this.board[row][col] != null)) {
             for (turns = 0; turns <= 3; turns++) {
               tile.rotate(turns);
-              valids = 0;
+              valids = [];
               invalids = 0;
               for (side in adjacents) {
                 offsets = adjacents[side];
                 other = this.board[row + offsets.row][col + offsets.col];
                 if (other != null) {
                   if (tile.connectableTo(other, side)) {
-                    valids++;
+                    valids.push(side);
                   } else {
                     invalids++;
                   }
                 }
               }
-              if (valids > 0 && invalids === 0) {
-                candidates.push([row, col, turns]);
+              if (valids.length > 0 && invalids === 0) {
+                candidates.push([row, col, turns, valids]);
               }
               tile.reset();
             }
@@ -217,7 +218,10 @@
       }
       return sortedCandidates;
     };
-    World.prototype.placeTile = function(row, col, tile) {
+    World.prototype.placeTile = function(row, col, neighbours, tile) {
+      if (neighbours.length === 0 && !tile.isStart) {
+        throw "Invalid tile placement";
+      }
       this.board[row][col] = tile;
       this.maxrow = Math.max(this.maxrow, row);
       this.minrow = Math.min(this.minrow, row);
@@ -225,15 +229,15 @@
       return this.mincol = Math.min(this.mincol, col);
     };
     World.prototype.randomlyPlaceTile = function(tile, candidates) {
-      var col, i, row, turns, _ref, _ref2;
+      var col, i, neighbours, row, turns, _ref, _ref2;
       candidates = (_ref = []).concat.apply(_ref, candidates);
       if (candidates.length > 0) {
         i = Math.round(Math.random() * (candidates.length - 1));
-        _ref2 = candidates[i], row = _ref2[0], col = _ref2[1], turns = _ref2[2];
+        _ref2 = candidates[i], row = _ref2[0], col = _ref2[1], turns = _ref2[2], neighbours = _ref2[3];
         if (turns > 0) {
           tile.rotate(turns);
         }
-        return this.placeTile(row, col, tile);
+        return this.placeTile(row, col, neighbours, tile);
       }
     };
     World.prototype.drawBoard = function() {
@@ -263,16 +267,16 @@
       }
     };
     World.prototype.drawCandidates = function(tile, candidates) {
-      var actives, attach, candidate, col, row;
+      var actives, attach, candidate, col, neighbours, row, turns;
       $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass);
-      attach = __bind(function(cell, row, col) {
+      attach = __bind(function(cell, row, col, neighbours) {
         return cell.unbind().click(__bind(function() {
           var item, _i, _len;
           for (_i = 0, _len = actives.length; _i < _len; _i++) {
             item = actives[_i];
             item.attr('class', '').unbind();
           }
-          this.placeTile(row, col, tile);
+          this.placeTile(row, col, neighbours, tile);
           this.drawBoard();
           return this.next();
         }, this)).attr('class', 'candidate');
@@ -283,8 +287,8 @@
         _results = [];
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           candidate = _ref[_i];
-          row = candidate[0], col = candidate[1];
-          _results.push(attach($('td[row=' + row + '][col=' + col + ']'), row, col));
+          row = candidate[0], col = candidate[1], turns = candidate[2], neighbours = candidate[3];
+          _results.push(attach($('td[row=' + row + '][col=' + col + ']'), row, col, neighbours));
         }
         return _results;
       })();

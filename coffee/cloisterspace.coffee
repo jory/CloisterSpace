@@ -62,7 +62,22 @@ class World
     @center = @minrow = @maxrow = @mincol = @maxcol = @tiles.length
 
     @board = (new Array(@center * 2) for i in [1..@center * 2])
-    @placeTile(@center, @center, @tiles.shift())
+    @placeTile(@center, @center, [], @tiles.shift())
+
+
+  adjacents =
+    north:
+      row:-1
+      col: 0
+    east:
+      row: 0
+      col: 1
+    south:
+      row: 1
+      col: 0
+    west:
+      row: 0
+      col:-1
 
 
   generateRandomTileSet: ->
@@ -141,20 +156,6 @@ class World
 
 
   findValidPositions: (tile) ->
-    adjacents =
-      north:
-        row:-1
-        col: 0
-      east:
-        row: 0
-        col: 1
-      south:
-        row: 1
-        col: 0
-      west:
-        row: 0
-        col:-1
-
     candidates = []
 
     for row in [@minrow - 1..@maxrow + 1]
@@ -164,19 +165,19 @@ class World
 
             tile.rotate(turns)
 
-            valids = 0
+            valids = []
             invalids = 0
 
             for side, offsets of adjacents
               other = @board[row + offsets.row][col + offsets.col]
               if other?
                 if tile.connectableTo(other, side)
-                  valids++
+                  valids.push(side)
                 else
                   invalids++
 
-            if valids > 0 and invalids is 0
-              candidates.push([row, col, turns])
+            if valids.length > 0 and invalids is 0
+              candidates.push([row, col, turns, valids])
 
             tile.reset()
 
@@ -188,7 +189,11 @@ class World
     sortedCandidates
 
 
-  placeTile: (row, col, tile) ->
+  placeTile: (row, col, neighbours, tile) ->
+
+    if neighbours.length is 0 and ! tile.isStart
+      throw "Invalid tile placement"
+
     @board[row][col] = tile
 
     @maxrow = Math.max(@maxrow, row)
@@ -196,17 +201,44 @@ class World
     @maxcol = Math.max(@maxcol, col)
     @mincol = Math.min(@mincol, col)
 
+    # Connect the features of the current tile to the world-level features.
+
+    # If you can't find an adjacent, you're either the first tile, or
+    # the tile is being placed erroneously.
+    # What if placeTile gets the adjacent tiles passed in as well...
+
+    # Keeping track of roads, cities and farms:
+    #
+    #  - every city edge must be connected to another city edge. If any
+    #    city edge is unconnected, the city can't be complete
+    #
+    #  - roads must have two ends.
+    #
+    #  - farms... are complicated
+    #
+    # Pseudo:
+    #
+    #  On adding any tile, each edge of the tile must be processed. Start
+    #  on one of the edges that abuts existing features.
+    #
+    #  Roads, cities and fields are numbered. If two of any item share a
+    #  number, they are both assigned to the same world-level object.
+    #
+    #  When adding a road edge:
+    #   If ! hasRoadEnd, the other edge with a road is connected to the current one.
+    #   Else, each road edge belongs to its own (potentially pre-existing) road.
+
 
   randomlyPlaceTile: (tile, candidates) ->
     candidates = [].concat candidates...
 
     if candidates.length > 0
       i = Math.round(Math.random() * (candidates.length - 1))
-      [row, col, turns] = candidates[i]
+      [row, col, turns, neighbours] = candidates[i]
 
       tile.rotate(turns) if turns > 0
 
-      @placeTile(row, col, tile)
+      @placeTile(row, col, neighbours, tile)
 
 
   drawBoard: ->
@@ -237,20 +269,20 @@ class World
   drawCandidates: (tile, candidates) ->
     $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass)
 
-    attach = (cell, row, col) =>
+    attach = (cell, row, col, neighbours) =>
       cell.unbind().click(=>
 
         for item in actives
           item.attr('class', '').unbind()
 
-        @placeTile(row, col, tile)
+        @placeTile(row, col, neighbours, tile)
         @drawBoard()
         @next()
       ).attr('class', 'candidate')
 
     actives = for candidate in candidates[tile.rotation]
-      [row, col] = candidate
-      attach($('td[row=' + row + '][col=' + col + ']'), row, col)
+      [row, col, turns, neighbours] = candidate
+      attach($('td[row=' + row + '][col=' + col + ']'), row, col, neighbours)
 
     $('#left').unbind().click(=>
       for item in actives
