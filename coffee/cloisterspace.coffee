@@ -2,8 +2,7 @@ Array::remove = (e) -> @[t..t] = [] if (t = @.indexOf(e)) > -1
 
 class Edge
   constructor: (@type, @road, @city, @grassA, @grassB) ->
-    @string = 'type: ' + @type + ', road: ' + @road + ', city: ' + @city +
-              ', grassA: ' + @grassA + ', grassB: ' + @grassB
+    @string = 'type: #{@type}, road: #{@road}, city: #{@city}, grassA: #{@grassA}, grassB: #{@grassB}'
 
 
 class Tile
@@ -109,7 +108,7 @@ class Road
     out = "Road: ("
     for address of @tiles
       out += address + "; "
-    out.slice(0, -2) + "), length: " + @length + ", numEnds: " + @numEnds + ", finished: " + @finished
+    out.slice(0, -2) + "), length: #{@length}, numEnds: #{@numEnds}, finished: #{@finished}"
 
 
 class World
@@ -161,37 +160,30 @@ class World
 
     tileDefinitions = [
         'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
-        ##########################################
-        # Roads (merge and loop)
-        ##########################################
-        'city1rse.png   2   reg   crrg    --  -11-    1---    --122111'
-        'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221',
-        'city1rse.png   2   reg   crrg    --  -11-    1---    --122111'
-        ##########################################
-        # 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
-        # 'city4.png      1   reg   cccc    --  ----    1111    --------',
-        # 'road4.png      1   reg   rrrr    --  1234    ----    12233441',
-        # 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
-        # 'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
-        # 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
-        # 'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
-        # 'road3.png      4   reg   grrr    --  -123    ----    11122331',
-        # 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
-        # 'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
-        # 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
-        # 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
-        # 'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
-        # 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
-        # 'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
-        # 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
-        # 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
-        # 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
-        # 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
-        # 'cloister.png   4   reg   gggg    --  ----    ----    11111111',
-        # 'city1.png      5   reg   cggg    --  ----    1---    --111111',
-        # 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
-        # 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
-        # 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
+        'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
+        'city4.png      1   reg   cccc    --  ----    1111    --------',
+        'road4.png      1   reg   rrrr    --  1234    ----    12233441',
+        'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
+        'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
+        'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
+        'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
+        'road3.png      4   reg   grrr    --  -123    ----    11122331',
+        'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
+        'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
+        'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
+        'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
+        'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
+        'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
+        'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
+        'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
+        'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
+        'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
+        'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
+        'cloister.png   4   reg   gggg    --  ----    ----    11111111',
+        'city1.png      5   reg   cggg    --  ----    1---    --111111',
+        'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
+        'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
+        'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
       ]
 
     tileSets = for tileDef in tileDefinitions
@@ -223,7 +215,7 @@ class World
     tiles = [].concat tileSets...
 
     # This operation is ugly, but necessary
-    # [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
+    [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
 
   findValidPositions: (tile) ->
     candidates = []
@@ -276,18 +268,17 @@ class World
     for row in [@minrow - 1..@maxrow + 1]
       tr = $("<tr></tr>")
       for col in [@mincol - 1..@maxcol + 1]
-        td = $("<td row='" + row + "' col='" + col + "'></td>")
+        td = $("<td row='#{row}' col='#{col}'></td>")
         tile = @board[row][col]
         if tile?
-          td = $("<td row='" + row + "' col='" + col + "'>" +
-                 "<img src='img/" + tile.image +
-                 "' class='" + tile.rotationClass + "'/></td>")
+          td = $("<td row='#{row}' col='#{col}'>" +
+                 "<img src='img/#{tile.image}' class='#{tile.rotationClass}'/></td>")
         tr.append(td)
       tbody.append(tr)
     $("#board").empty().append(table)
 
   drawCandidates: (tile, candidates) ->
-    $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass)
+    $('#candidate').attr('src', 'img/#{tile.image}').attr('class', tile.rotationClass)
 
     attach = (cell, row, col, neighbours) =>
       cell.unbind().click(=>
@@ -302,7 +293,7 @@ class World
 
     actives = for candidate in candidates[tile.rotation]
       [row, col, turns, neighbours] = candidate
-      attach($('td[row=' + row + '][col=' + col + ']'), row, col, neighbours)
+      attach($('td[row=#{row}][col=#{col}]'), row, col, neighbours)
 
     $('#left').unbind().click(=>
       for item in actives
@@ -424,21 +415,7 @@ class World
 
 world = new World()
 
-tile = world.tiles.shift()
-positions = world.findValidPositions(tile)
-world.placeTile(6, 5, tile, positions[0][0][3])
-
-tile = world.tiles.shift()
-positions = world.findValidPositions(tile)
-tile.rotate(1)
-world.placeTile(6, 7, tile, positions[1][0][3])
-
-tile = world.tiles.shift()
-positions = world.findValidPositions(tile)
-tile.rotate(2)
-world.placeTile(7, 6, tile, positions[2][2][3])
+for tile in world.tiles
+  world.randomlyPlaceTile(tile, world.findValidPositions(tile))
 
 world.drawBoard()
-world.next()
-
-$('#left').click()

@@ -1,5 +1,5 @@
 (function() {
-  var Edge, Road, Tile, World, positions, tile, world;
+  var Edge, Road, Tile, World, tile, world, _i, _len, _ref;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -19,7 +19,7 @@
       this.city = city;
       this.grassA = grassA;
       this.grassB = grassB;
-      this.string = 'type: ' + this.type + ', road: ' + this.road + ', city: ' + this.city + ', grassA: ' + this.grassA + ', grassB: ' + this.grassB;
+      this.string = 'type: #{@type}, road: #{@road}, city: #{@city}, grassA: #{@grassA}, grassB: #{@grassB}';
     }
     return Edge;
   })();
@@ -154,7 +154,7 @@
       for (address in this.tiles) {
         out += address + "; ";
       }
-      return out.slice(0, -2) + "), length: " + this.length + ", numEnds: " + this.numEnds + ", finished: " + this.finished;
+      return out.slice(0, -2) + ("), length: " + this.length + ", numEnds: " + this.numEnds + ", finished: " + this.finished);
     };
     return Road;
   })();
@@ -208,7 +208,7 @@
         'g': 'grass',
         'c': 'city'
       };
-      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rse.png   2   reg   crrg    --  -11-    1---    --122111', 'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221', 'city1rse.png   2   reg   crrg    --  -11-    1---    --122111'];
+      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221', 'city4.png      1   reg   cccc    --  ----    1111    --------', 'road4.png      1   reg   rrrr    --  1234    ----    12233441', 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--', 'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--', 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--', 'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--', 'road3.png      4   reg   grrr    --  -123    ----    11122331', 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--', 'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--', 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111', 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--', 'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--', 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--', 'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--', 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221', 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111', 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--', 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111', 'cloister.png   4   reg   gggg    --  ----    ----    11111111', 'city1.png      5   reg   cggg    --  ----    1---    --111111', 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111', 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221', 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'];
       tileSets = (function() {
         var _i, _len, _results;
         _results = [];
@@ -251,7 +251,10 @@
         }
         return _results;
       })();
-      return tiles = (_ref = []).concat.apply(_ref, tileSets);
+      tiles = (_ref = []).concat.apply(_ref, tileSets);
+      return [tiles[0]].concat(_(tiles.slice(1, (tiles.length + 1) || 9e9)).sortBy(function() {
+        return Math.random();
+      }));
     };
     World.prototype.findValidPositions = function(tile) {
       var candidate, candidates, col, i, invalids, offsets, other, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4;
@@ -318,7 +321,7 @@
           td = $("<td row='" + row + "' col='" + col + "'></td>");
           tile = this.board[row][col];
           if (tile != null) {
-            td = $("<td row='" + row + "' col='" + col + "'>" + "<img src='img/" + tile.image + "' class='" + tile.rotationClass + "'/></td>");
+            td = $(("<td row='" + row + "' col='" + col + "'>") + ("<img src='img/" + tile.image + "' class='" + tile.rotationClass + "'/></td>"));
           }
           tr.append(td);
         }
@@ -328,7 +331,7 @@
     };
     World.prototype.drawCandidates = function(tile, candidates) {
       var actives, attach, candidate, col, neighbours, row, turns;
-      $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass);
+      $('#candidate').attr('src', 'img/#{tile.image}').attr('class', tile.rotationClass);
       attach = __bind(function(cell, row, col, neighbours) {
         return cell.unbind().click(__bind(function() {
           var item, _i, _len;
@@ -348,7 +351,7 @@
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           candidate = _ref[_i];
           row = candidate[0], col = candidate[1], turns = candidate[2], neighbours = candidate[3];
-          _results.push(attach($('td[row=' + row + '][col=' + col + ']'), row, col, neighbours));
+          _results.push(attach($('td[row=#{row}][col=#{col}]'), row, col, neighbours));
         }
         return _results;
       })();
@@ -471,18 +474,10 @@
     return World;
   })();
   world = new World();
-  tile = world.tiles.shift();
-  positions = world.findValidPositions(tile);
-  world.placeTile(6, 5, tile, positions[0][0][3]);
-  tile = world.tiles.shift();
-  positions = world.findValidPositions(tile);
-  tile.rotate(1);
-  world.placeTile(6, 7, tile, positions[1][0][3]);
-  tile = world.tiles.shift();
-  positions = world.findValidPositions(tile);
-  tile.rotate(2);
-  world.placeTile(7, 6, tile, positions[2][2][3]);
+  _ref = world.tiles;
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    tile = _ref[_i];
+    world.randomlyPlaceTile(tile, world.findValidPositions(tile));
+  }
   world.drawBoard();
-  world.next();
-  $('#left').click();
 }).call(this);
