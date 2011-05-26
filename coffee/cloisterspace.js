@@ -1,5 +1,5 @@
 (function() {
-  var Edge, Road, Tile, World, print_features, tile, world, _i, _len, _ref;
+  var Edge, Road, Tile, World, print_features, world;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -19,7 +19,7 @@
       this.city = city;
       this.grassA = grassA;
       this.grassB = grassB;
-      this.string = 'type: #{@type}, road: #{@road}, city: #{@city}, grassA: #{@grassA}, grassB: #{@grassB}';
+      this.string = "type: " + this.type + ", road: " + this.road + ", city: " + this.city + ", grassA: " + this.grassA + ", grassB: " + this.grassB;
     }
     return Edge;
   })();
@@ -334,7 +334,7 @@
     };
     World.prototype.drawCandidates = function(tile, candidates) {
       var actives, attach, candidate, col, neighbours, row, turns;
-      $('#candidate').attr('src', 'img/#{tile.image}').attr('class', tile.rotationClass);
+      $('#candidate').attr('src', "img/" + tile.image).attr('class', tile.rotationClass);
       attach = __bind(function(cell, row, col, neighbours) {
         return cell.unbind().click(__bind(function() {
           var item, _i, _len;
@@ -354,7 +354,7 @@
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           candidate = _ref[_i];
           row = candidate[0], col = candidate[1], turns = candidate[2], neighbours = candidate[3];
-          _results.push(attach($('td[row=#{row}][col=#{col}]'), row, col, neighbours));
+          _results.push(attach($("td[row=" + row + "][col=" + col + "]"), row, col, neighbours));
         }
         return _results;
       })();
@@ -476,19 +476,15 @@
     return World;
   })();
   world = new World();
-  _ref = world.tiles;
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    tile = _ref[_i];
-    world.randomlyPlaceTile(tile, world.findValidPositions(tile));
-  }
   world.drawBoard();
+  world.next();
   print_features = function(all) {
-    var road, _j, _len2, _ref2, _results;
+    var road, _i, _len, _ref, _results;
     console.log('------------------------------------------');
-    _ref2 = world.roads;
+    _ref = world.roads;
     _results = [];
-    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-      road = _ref2[_j];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      road = _ref[_i];
       _results.push(all || road.finished ? console.log(road.toString()) : void 0);
     }
     return _results;

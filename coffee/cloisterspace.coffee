@@ -2,7 +2,7 @@ Array::remove = (e) -> @[t..t] = [] if (t = @.indexOf(e)) > -1
 
 class Edge
   constructor: (@type, @road, @city, @grassA, @grassB) ->
-    @string = 'type: #{@type}, road: #{@road}, city: #{@city}, grassA: #{@grassA}, grassB: #{@grassB}'
+    @string = "type: #{@type}, road: #{@road}, city: #{@city}, grassA: #{@grassA}, grassB: #{@grassB}"
 
 
 class Tile
@@ -281,7 +281,7 @@ class World
     $("#board").empty().append(table)
 
   drawCandidates: (tile, candidates) ->
-    $('#candidate').attr('src', 'img/#{tile.image}').attr('class', tile.rotationClass)
+    $('#candidate').attr('src', "img/#{tile.image}").attr('class', tile.rotationClass)
 
     attach = (cell, row, col, neighbours) =>
       cell.unbind().click(=>
@@ -296,7 +296,7 @@ class World
 
     actives = for candidate in candidates[tile.rotation]
       [row, col, turns, neighbours] = candidate
-      attach($('td[row=#{row}][col=#{col}]'), row, col, neighbours)
+      attach($("td[row=#{row}][col=#{col}]"), row, col, neighbours)
 
     $('#left').unbind().click(=>
       for item in actives
@@ -414,10 +414,11 @@ class World
 
 world = new World()
 
-for tile in world.tiles
-  world.randomlyPlaceTile(tile, world.findValidPositions(tile))
+# for tile in world.tiles
+#   world.randomlyPlaceTile(tile, world.findValidPositions(tile))
 
 world.drawBoard()
+world.next()
 
 print_features = (all) ->
   console.log('------------------------------------------')
