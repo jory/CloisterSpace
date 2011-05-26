@@ -425,8 +425,8 @@ class World
       @drawCandidates(tile, candidates)
     else
       $('#candidate').attr('style', 'visibility: hidden')
-      $('#left').unbind()
-      $('#right').unbind()
+      $('#left').unbind().attr('disabled', 'disabled')
+      $('#right').unbind().attr('disabled', 'disabled')
 
   placeTile: (row, col, tile, neighbours) ->
     if neighbours.length is 0 and not tile.isStart
@@ -565,12 +565,16 @@ $('#go').click(->
   for tile in world.tiles
     world.randomlyPlaceTile(tile, world.findValidPositions(tile))
 
-  $('#go').unbind().attr('disabled', 'disabled')
   $('#candidate').attr('style', 'visibility: hidden')
-  $('#left').unbind()
-  $('#right').unbind()
+  $('#left').unbind().attr('disabled', 'disabled')
+  $('#right').unbind().attr('disabled', 'disabled')
+
+  $('#go').unbind().attr('disabled', 'disabled')
+
   $('.candidate').unbind().attr('class', '')
 
   world.drawBoard()
 ).attr('disabled', '')
 
+$('#go').click()
+$('#features_completed').click()

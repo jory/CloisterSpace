@@ -493,8 +493,8 @@
         return this.drawCandidates(tile, candidates);
       } else {
         $('#candidate').attr('style', 'visibility: hidden');
-        $('#left').unbind();
-        return $('#right').unbind();
+        $('#left').unbind().attr('disabled', 'disabled');
+        return $('#right').unbind().attr('disabled', 'disabled');
       }
     };
     World.prototype.placeTile = function(row, col, tile, neighbours) {
@@ -652,11 +652,13 @@
       tile = _ref[_i];
       world.randomlyPlaceTile(tile, world.findValidPositions(tile));
     }
-    $('#go').unbind().attr('disabled', 'disabled');
     $('#candidate').attr('style', 'visibility: hidden');
-    $('#left').unbind();
-    $('#right').unbind();
+    $('#left').unbind().attr('disabled', 'disabled');
+    $('#right').unbind().attr('disabled', 'disabled');
+    $('#go').unbind().attr('disabled', 'disabled');
     $('.candidate').unbind().attr('class', '');
     return world.drawBoard();
   }).attr('disabled', '');
+  $('#go').click();
+  $('#features_completed').click();
 }).call(this);
