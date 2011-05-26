@@ -1,11 +1,17 @@
 (function() {
-  var Edge, Road, Tile, World, world;
+  var Edge, Road, Tile, World, positions, tile, world;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
     }
     return -1;
   }, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  Array.prototype.remove = function(e) {
+    var t, _ref;
+    if ((t = this.indexOf(e)) > -1) {
+      return ([].splice.apply(this, [t, t - t + 1].concat(_ref = [])), _ref);
+    }
+  };
   Edge = (function() {
     function Edge(type, road, city, grassA, grassB) {
       this.type = type;
@@ -96,7 +102,13 @@
       this.ids = {};
       this.ids[address + ',' + id] = true;
       this.edges = {};
-      this.edges[address + ',' + edge] = true;
+      this.edges[address + ',' + edge] = {
+        row: row,
+        col: col,
+        edge: edge,
+        id: id,
+        hasEnd: hasEnd
+      };
       this.length = 1;
       this.numEnds = hasEnd ? 1 : 0;
       this.finished = false;
@@ -109,7 +121,13 @@
         this.tiles[address] = true;
       }
       this.ids[address + ',' + id] = true;
-      this.edges[address + ',' + edge] = true;
+      this.edges[address + ',' + edge] = {
+        row: row,
+        col: col,
+        edge: edge,
+        id: id,
+        hasEnd: hasEnd
+      };
       if (hasEnd) {
         this.numEnds += 1;
         if (this.numEnds === 2) {
@@ -119,6 +137,16 @@
     };
     Road.prototype.has = function(row, col, id) {
       return this.ids[row + ',' + col + ',' + id];
+    };
+    Road.prototype.merge = function(other) {
+      var e, edge, _ref, _results;
+      _ref = other.edges;
+      _results = [];
+      for (e in _ref) {
+        edge = _ref[e];
+        _results.push(this.add(edge.row, edge.col, edge.edge, edge.id, edge.hasEnd));
+      }
+      return _results;
     };
     Road.prototype.toString = function() {
       var address, out;
@@ -147,7 +175,7 @@
         }
         return _results;
       }).call(this);
-      this.placeTile(this.center, this.center, [], this.tiles.shift());
+      this.placeTile(this.center, this.center, this.tiles.shift(), []);
     }
     adjacents = {
       north: {
@@ -180,7 +208,7 @@
         'g': 'grass',
         'c': 'city'
       };
-      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221', 'city4.png      1   reg   cccc    --  ----    1111    --------', 'road4.png      1   reg   rrrr    --  1234    ----    12233441', 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--', 'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--', 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--', 'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--', 'road3.png      4   reg   grrr    --  -123    ----    11122331', 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--', 'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--', 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111', 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--', 'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--', 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--', 'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--', 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221', 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111', 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--', 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111', 'cloister.png   4   reg   gggg    --  ----    ----    11111111', 'city1.png      5   reg   cggg    --  ----    1---    --111111', 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111', 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221', 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'];
+      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rse.png   2   reg   crrg    --  -11-    1---    --122111', 'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221', 'city1rse.png   2   reg   crrg    --  -11-    1---    --122111'];
       tileSets = (function() {
         var _i, _len, _results;
         _results = [];
@@ -223,10 +251,7 @@
         }
         return _results;
       })();
-      tiles = (_ref = []).concat.apply(_ref, tileSets);
-      return [tiles[0]].concat(_(tiles.slice(1, (tiles.length + 1) || 9e9)).sortBy(function() {
-        return Math.random();
-      }));
+      return tiles = (_ref = []).concat.apply(_ref, tileSets);
     };
     World.prototype.findValidPositions = function(tile) {
       var candidate, candidates, col, i, invalids, offsets, other, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4;
@@ -271,69 +296,6 @@
       }
       return sortedCandidates;
     };
-    World.prototype.placeTile = function(row, col, neighbours, tile) {
-      var added, dir, edge, handled, neighbour, offsets, otherCol, otherEdge, otherRow, road, seen, _i, _j, _len, _len2, _ref, _results;
-      if (neighbours.length === 0 && !tile.isStart) {
-        throw "Invalid tile placement";
-      }
-      this.board[row][col] = tile;
-      this.maxrow = Math.max(this.maxrow, row);
-      this.minrow = Math.min(this.minrow, row);
-      this.maxcol = Math.max(this.maxcol, col);
-      this.mincol = Math.min(this.mincol, col);
-      handled = {
-        north: false,
-        south: false,
-        east: false,
-        west: false
-      };
-      for (_i = 0, _len = neighbours.length; _i < _len; _i++) {
-        dir = neighbours[_i];
-        edge = tile.edges[dir];
-        offsets = adjacents[dir];
-        otherRow = row + offsets.row;
-        otherCol = col + offsets.col;
-        neighbour = this.board[otherRow][otherCol];
-        otherEdge = neighbour.edges[oppositeDirection[dir]];
-        added = false;
-        if (edge.type === 'road') {
-          _ref = this.roads;
-          for (_j = 0, _len2 = _ref.length; _j < _len2; _j++) {
-            road = _ref[_j];
-            if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
-              road.add(row, col, dir, edge.road, tile.hasRoadEnd);
-              added = true;
-            }
-          }
-        }
-        handled[dir] = true;
-      }
-      _results = [];
-      for (dir in handled) {
-        seen = handled[dir];
-        _results.push((function() {
-          var _k, _len3, _ref2;
-          if (!seen) {
-            edge = tile.edges[dir];
-            added = false;
-            if (edge.type === 'road') {
-              _ref2 = this.roads;
-              for (_k = 0, _len3 = _ref2.length; _k < _len3; _k++) {
-                road = _ref2[_k];
-                if (!added && road.has(row, col, edge.road)) {
-                  road.add(row, col, dir, edge.road, tile.hasRoadEnd);
-                  added = true;
-                }
-              }
-              if (!added) {
-                return this.roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd));
-              }
-            }
-          }
-        }).call(this));
-      }
-      return _results;
-    };
     World.prototype.randomlyPlaceTile = function(tile, candidates) {
       var col, i, neighbours, row, turns, _ref, _ref2;
       candidates = (_ref = []).concat.apply(_ref, candidates);
@@ -343,7 +305,7 @@
         if (turns > 0) {
           tile.rotate(turns);
         }
-        return this.placeTile(row, col, neighbours, tile);
+        return this.placeTile(row, col, tile, neighbours);
       }
     };
     World.prototype.drawBoard = function() {
@@ -364,14 +326,6 @@
       }
       return $("#board").empty().append(table);
     };
-    World.prototype.next = function() {
-      var candidates, tile;
-      if (this.tiles.length > 0) {
-        tile = this.tiles.shift();
-        candidates = this.findValidPositions(tile);
-        return this.drawCandidates(tile, candidates);
-      }
-    };
     World.prototype.drawCandidates = function(tile, candidates) {
       var actives, attach, candidate, col, neighbours, row, turns;
       $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass);
@@ -382,7 +336,7 @@
             item = actives[_i];
             item.attr('class', '').unbind();
           }
-          this.placeTile(row, col, neighbours, tile);
+          this.placeTile(row, col, tile, neighbours);
           this.drawBoard();
           return this.next();
         }, this)).attr('class', 'candidate');
@@ -417,9 +371,118 @@
         return this.drawCandidates(tile, candidates);
       }, this));
     };
+    World.prototype.next = function() {
+      var candidates, tile;
+      if (this.tiles.length > 0) {
+        tile = this.tiles.shift();
+        candidates = this.findValidPositions(tile);
+        return this.drawCandidates(tile, candidates);
+      } else {
+        return $('#sideboard').empty();
+      }
+    };
+    World.prototype.placeTile = function(row, col, tile, neighbours) {
+      var added, dir, edge, handled, neighbour, offsets, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _m, _ref, _ref2, _ref3, _ref4;
+      if (neighbours.length === 0 && !tile.isStart) {
+        throw "Invalid tile placement";
+      }
+      this.board[row][col] = tile;
+      this.maxrow = Math.max(this.maxrow, row);
+      this.minrow = Math.min(this.minrow, row);
+      this.maxcol = Math.max(this.maxcol, col);
+      this.mincol = Math.min(this.mincol, col);
+      handled = {
+        north: false,
+        south: false,
+        east: false,
+        west: false
+      };
+      roads = [];
+      for (_i = 0, _len = neighbours.length; _i < _len; _i++) {
+        dir = neighbours[_i];
+        offsets = adjacents[dir];
+        otherRow = row + offsets.row;
+        otherCol = col + offsets.col;
+        neighbour = this.board[otherRow][otherCol];
+        edge = tile.edges[dir];
+        otherEdge = neighbour.edges[oppositeDirection[dir]];
+        added = false;
+        if (edge.type === 'road') {
+          if (!tile.hasRoadEnd && roads.length > 0) {
+            _ref = this.roads;
+            for (_j = 0, _len2 = _ref.length; _j < _len2; _j++) {
+              road = _ref[_j];
+              if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
+                if (roads[0] === road) {
+                  road.finished = true;
+                  added = true;
+                } else {
+                  roads[0].merge(road);
+                  this.roads.remove(road);
+                  added = true;
+                }
+              }
+            }
+          } else {
+            _ref2 = this.roads;
+            for (_k = 0, _len3 = _ref2.length; _k < _len3; _k++) {
+              road = _ref2[_k];
+              if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
+                road.add(row, col, dir, edge.road, tile.hasRoadEnd);
+                roads.push(road);
+                added = true;
+              }
+            }
+          }
+        } else if (edge.type === 'city') {
+          console.log('city');
+        } else if (edge.type === 'grass') {
+          console.log('grass');
+        }
+        handled[dir] = true;
+      }
+      for (dir in handled) {
+        seen = handled[dir];
+        if (!seen) {
+          edge = tile.edges[dir];
+          added = false;
+          if (edge.type === 'road') {
+            _ref3 = this.roads;
+            for (_l = 0, _len4 = _ref3.length; _l < _len4; _l++) {
+              road = _ref3[_l];
+              if (!added && road.has(row, col, edge.road)) {
+                road.add(row, col, dir, edge.road, tile.hasRoadEnd);
+                added = true;
+              }
+            }
+            if (!added) {
+              this.roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd));
+            }
+          }
+        }
+      }
+      _ref4 = this.roads;
+      for (_m = 0, _len5 = _ref4.length; _m < _len5; _m++) {
+        road = _ref4[_m];
+        console.log(road.toString());
+      }
+      return console.log('----------------------------------------');
+    };
     return World;
   })();
   world = new World();
+  tile = world.tiles.shift();
+  positions = world.findValidPositions(tile);
+  world.placeTile(6, 5, tile, positions[0][0][3]);
+  tile = world.tiles.shift();
+  positions = world.findValidPositions(tile);
+  tile.rotate(1);
+  world.placeTile(6, 7, tile, positions[1][0][3]);
+  tile = world.tiles.shift();
+  positions = world.findValidPositions(tile);
+  tile.rotate(2);
+  world.placeTile(7, 6, tile, positions[2][2][3]);
   world.drawBoard();
   world.next();
+  $('#left').click();
 }).call(this);

@@ -1,3 +1,5 @@
+Array::remove = (e) -> @[t..t] = [] if (t = @.indexOf(e)) > -1
+
 class Edge
   constructor: (@type, @road, @city, @grassA, @grassB) ->
     @string = 'type: ' + @type + ', road: ' + @road + ', city: ' + @city +
@@ -62,7 +64,12 @@ class Road
     @ids[address + ',' + id] = true
 
     @edges = {}
-    @edges[address + ',' + edge] = true
+    @edges[address + ',' + edge] =
+      row: row
+      col: col
+      edge: edge
+      id: id
+      hasEnd: hasEnd
 
     @length = 1
 
@@ -79,7 +86,12 @@ class Road
 
     @ids[address + ',' + id] = true
 
-    @edges[address + ',' + edge] = true
+    @edges[address + ',' + edge] =
+      row: row
+      col: col
+      edge: edge
+      id: id
+      hasEnd: hasEnd
 
     if hasEnd
       @numEnds += 1
@@ -88,6 +100,10 @@ class Road
 
   has: (row, col, id) ->
     @ids[row + ',' + col + ',' + id]
+
+  merge: (other) ->
+    for e, edge of other.edges
+      @add(edge.row, edge.col, edge.edge, edge.id, edge.hasEnd)
 
   toString: ->
     out = "Road: ("
@@ -107,7 +123,7 @@ class World
     @farms = []
 
     @board = (new Array(@center * 2) for i in [1..@center * 2])
-    @placeTile(@center, @center, [], @tiles.shift())
+    @placeTile(@center, @center, @tiles.shift(), [])
 
   adjacents =
     north:
@@ -145,30 +161,37 @@ class World
 
     tileDefinitions = [
         'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
-        'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
-        'city4.png      1   reg   cccc    --  ----    1111    --------',
-        'road4.png      1   reg   rrrr    --  1234    ----    12233441',
-        'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
-        'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
-        'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
-        'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
-        'road3.png      4   reg   grrr    --  -123    ----    11122331',
-        'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
-        'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
-        'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
-        'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
-        'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
-        'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
-        'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
-        'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
-        'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
-        'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
-        'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
-        'cloister.png   4   reg   gggg    --  ----    ----    11111111',
-        'city1.png      5   reg   cggg    --  ----    1---    --111111',
-        'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
-        'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
-        'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
+        ##########################################
+        # Roads (merge and loop)
+        ##########################################
+        'city1rse.png   2   reg   crrg    --  -11-    1---    --122111'
+        'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221',
+        'city1rse.png   2   reg   crrg    --  -11-    1---    --122111'
+        ##########################################
+        # 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
+        # 'city4.png      1   reg   cccc    --  ----    1111    --------',
+        # 'road4.png      1   reg   rrrr    --  1234    ----    12233441',
+        # 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
+        # 'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
+        # 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
+        # 'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
+        # 'road3.png      4   reg   grrr    --  -123    ----    11122331',
+        # 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
+        # 'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
+        # 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
+        # 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
+        # 'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
+        # 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
+        # 'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
+        # 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
+        # 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
+        # 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
+        # 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
+        # 'cloister.png   4   reg   gggg    --  ----    ----    11111111',
+        # 'city1.png      5   reg   cggg    --  ----    1---    --111111',
+        # 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
+        # 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
+        # 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
       ]
 
     tileSets = for tileDef in tileDefinitions
@@ -200,7 +223,7 @@ class World
     tiles = [].concat tileSets...
 
     # This operation is ugly, but necessary
-    [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
+    # [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
 
   findValidPositions: (tile) ->
     candidates = []
@@ -235,93 +258,6 @@ class World
 
     sortedCandidates
 
-  placeTile: (row, col, neighbours, tile) ->
-    if neighbours.length is 0 and not tile.isStart
-      throw "Invalid tile placement"
-
-    @board[row][col] = tile
-
-    @maxrow = Math.max(@maxrow, row)
-    @minrow = Math.min(@minrow, row)
-    @maxcol = Math.max(@maxcol, col)
-    @mincol = Math.min(@mincol, col)
-
-    handled =
-      north: false
-      south: false
-      east:  false
-      west:  false
-
-    # Connect the features of the current tile to the world-level features.
-
-    for dir in neighbours
-      edge = tile.edges[dir]
-
-      offsets = adjacents[dir]
-      otherRow = row + offsets.row
-      otherCol = col + offsets.col
-      neighbour = @board[otherRow][otherCol]
-      otherEdge = neighbour.edges[oppositeDirection[dir]]
-
-      # We know what kind of features we're connecting to, because the
-      # edge can only validly connect to a similar edge.
-      added = false
-
-      if edge.type is 'road'
-        for road in @roads
-          if not added and road.has(otherRow, otherCol, otherEdge.road)
-            road.add(row, col, dir, edge.road, tile.hasRoadEnd)
-            added = true
-
-      handled[dir] = true
-
-    for dir, seen of handled
-      if not seen
-        edge = tile.edges[dir]
-
-        # either attach my features to existing ones on the current tile,
-        # or create new features.
-        added = false
-
-        if edge.type is 'road'
-          for road in @roads
-            if not added and road.has(row, col, edge.road)
-              road.add(row, col, dir, edge.road, tile.hasRoadEnd)
-              added = true
-
-          if not added
-              @roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd))
-
-    # Keeping track of roads, cities and farms:
-    #
-    #  - every city edge must be connected to another city edge. If any
-    #    city edge is unconnected, the city can't be complete
-    #
-    #  - roads must have two ends.
-    #
-    #  - farms... are complicated
-    #
-    #  - indexing: row, col, edge, feature-index.
-    #    A useful way to query would be (row, col, feature-index).
-    #
-    #  Road object:
-    #   hasTwoEnds
-    #   hasOneEnd
-    #   length
-    #   sections (row, col, edge?, feature-index)
-    #
-    # Pseudo:
-    #
-    #  On adding any tile, each edge of the tile must be processed. Start
-    #  on one of the edges that abuts existing features.
-    #
-    #  Roads, cities and fields are numbered. If two of any item share a
-    #  number, they are both assigned to the same world-level object.
-    #
-    #  When adding a road edge:
-    #   If ! hasRoadEnd, the other edge with a road is connected to the current one.
-    #   Else, each road edge belongs to its own (potentially pre-existing) road.
-
   randomlyPlaceTile: (tile, candidates) ->
     candidates = [].concat candidates...
 
@@ -331,7 +267,7 @@ class World
 
       tile.rotate(turns) if turns > 0
 
-      @placeTile(row, col, neighbours, tile)
+      @placeTile(row, col, tile, neighbours)
 
   drawBoard: ->
     table = $("<table><tbody></tbody></table>")
@@ -350,12 +286,6 @@ class World
       tbody.append(tr)
     $("#board").empty().append(table)
 
-  next: ->
-    if @tiles.length > 0
-      tile = @tiles.shift()
-      candidates = @findValidPositions(tile)
-      @drawCandidates(tile, candidates)
-
   drawCandidates: (tile, candidates) ->
     $('#candidate').attr('src', 'img/' + tile.image).attr('class', tile.rotationClass)
 
@@ -365,7 +295,7 @@ class World
         for item in actives
           item.attr('class', '').unbind()
 
-        @placeTile(row, col, neighbours, tile)
+        @placeTile(row, col, tile, neighbours)
         @drawBoard()
         @next()
       ).attr('class', 'candidate')
@@ -390,6 +320,125 @@ class World
       @drawCandidates(tile, candidates)
     )
 
+  next: ->
+    if @tiles.length > 0
+      tile = @tiles.shift()
+      candidates = @findValidPositions(tile)
+      @drawCandidates(tile, candidates)
+    else
+      $('#sideboard').empty()
+
+  placeTile: (row, col, tile, neighbours) ->
+    if neighbours.length is 0 and not tile.isStart
+      throw "Invalid tile placement"
+
+    @board[row][col] = tile
+
+    @maxrow = Math.max(@maxrow, row)
+    @minrow = Math.min(@minrow, row)
+    @maxcol = Math.max(@maxcol, col)
+    @mincol = Math.min(@mincol, col)
+
+    # Connect the features of the current tile to the world-level features.
+    #
+    # Keeping track of roads, cities and farms:
+    #
+    #  - every city edge must be connected to another city edge. If any
+    #    city edge is unconnected (i.e. singular), the city can't be complete
+    #
+    #  - roads must have two ends (or make a fully closed loop)
+    #
+    #  - farms... are complicated
+
+    handled =
+      north: false
+      south: false
+      east:  false
+      west:  false
+
+    roads = []
+
+    for dir in neighbours
+      offsets = adjacents[dir]
+      otherRow = row + offsets.row
+      otherCol = col + offsets.col
+      neighbour = @board[otherRow][otherCol]
+
+      edge = tile.edges[dir]
+      otherEdge = neighbour.edges[oppositeDirection[dir]]
+
+      added = false
+
+      if edge.type is 'road'
+        if not tile.hasRoadEnd and roads.length > 0
+          for road in @roads
+            if not added and road.has(otherRow, otherCol, otherEdge.road)
+              if roads[0] is road
+                # Closing a loop
+                road.finished = true
+                added = true
+              else
+                # Merging two roads
+                roads[0].merge(road)
+                @roads.remove(road)
+                added = true
+        else
+          for road in @roads
+            if not added and road.has(otherRow, otherCol, otherEdge.road)
+              road.add(row, col, dir, edge.road, tile.hasRoadEnd)
+              roads.push(road)
+              added = true
+
+      else if edge.type is 'city'
+        # TODO: Handle this
+        console.log('city')
+
+      else if edge.type is 'grass'
+        # TODO: Handle this
+        console.log('grass')
+
+      handled[dir] = true
+
+
+    for dir, seen of handled
+      if not seen
+        edge = tile.edges[dir]
+
+        # either attach my features to existing ones on the current tile,
+        # or create new features.
+        added = false
+
+        if edge.type is 'road'
+          for road in @roads
+            if not added and road.has(row, col, edge.road)
+              road.add(row, col, dir, edge.road, tile.hasRoadEnd)
+              added = true
+
+          if not added
+              @roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd))
+
+    for road in @roads
+      console.log(road.toString())
+    console.log('----------------------------------------')
+
+
 world = new World()
+
+tile = world.tiles.shift()
+positions = world.findValidPositions(tile)
+world.placeTile(6, 5, tile, positions[0][0][3])
+
+tile = world.tiles.shift()
+positions = world.findValidPositions(tile)
+tile.rotate(1)
+world.placeTile(6, 7, tile, positions[1][0][3])
+
+tile = world.tiles.shift()
+positions = world.findValidPositions(tile)
+tile.rotate(2)
+world.placeTile(7, 6, tile, positions[2][2][3])
+
 world.drawBoard()
 world.next()
+
+$('#left').click()
