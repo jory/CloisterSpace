@@ -35,7 +35,7 @@ class Tile
       @rotation += turns
       @rotation -= 4 if @rotation > 3
 
-      @rotationClass = 'r' + @rotation
+      @rotationClass = "r#{@rotation}"
 
       for i in [1..turns]
         tmp = @edges.north
@@ -54,16 +54,16 @@ class Tile
 
 class Road
   constructor: (row, col, edge, id, hasEnd) ->
-    address = row + ',' + col
+    address = "#{row},#{col}"
 
     @tiles = {}
     @tiles[address] = true
 
     @ids = {}
-    @ids[address + ',' + id] = true
+    @ids[address + ",#{id}"] = true
 
     @edges = {}
-    @edges[address + ',' + edge] =
+    @edges[address + ",#{edge}"] =
       row: row
       col: col
       edge: edge
@@ -77,15 +77,15 @@ class Road
     @finished = false
 
   add: (row, col, edge, id, hasEnd) ->
-    address = row + ',' + col
+    address = "#{row},#{col}"
 
     if not @tiles[address]
       @length += 1
       @tiles[address] = true
 
-    @ids[address + ',' + id] = true
+    @ids[address + ",#{id}"] = true
 
-    @edges[address + ',' + edge] =
+    @edges[address + ",#{edge}"] =
       row: row
       col: col
       edge: edge
@@ -98,7 +98,7 @@ class Road
         @finished = true
 
   has: (row, col, id) ->
-    @ids[row + ',' + col + ',' + id]
+    @ids["#{row},#{col},#{id}"]
 
   merge: (other) ->
     for e, edge of other.edges
@@ -109,6 +109,52 @@ class Road
     for address of @tiles
       out += "#{address}; "
     out.slice(0, -2) + "), length: #{@length}, numEnds: #{@numEnds}, finished: #{@finished}"
+
+
+class City
+  constructor: (row, col, edge, id) ->
+    address = "#{row},#{col}"
+
+    @tiles = {}
+    @tiles[address] = true
+
+    @ids = {}
+    @ids[address + ",#{id}"] = true
+
+    @edges = {}
+    @edges[address + ",#{edge}"] =
+      row: row
+      col: col
+      edge: edge
+      id: id
+
+    @length = 1
+
+    @finished = false
+
+  add: (row, col, edge, id) ->
+    address = "#{row},#{col}"
+
+    if not @tiles[address]
+      @length += 1
+      @tiles[address] = true
+
+    @ids[address + ",#{id}"] = true
+
+    @edges[address + ",#{edge}"] =
+      row: row
+      col: col
+      edge: edge
+      id: id
+
+  has: (row, col, id) ->
+    @ids["#{row},#{col},#{id}"]
+
+  toString: ->
+    out = "City: ("
+    for address of @tiles
+      out += "#{address}; "
+    out.slice(0, -2) + "), length: #{@length}, finished: #{@finished}"
 
 
 class World
@@ -161,30 +207,34 @@ class World
 
     tileDefinitions = [
         'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
-        'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
-        'city4.png      1   reg   cccc    --  ----    1111    --------',
-        'road4.png      1   reg   rrrr    --  1234    ----    12233441',
-        'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
-        'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
-        'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
-        'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
-        'road3.png      4   reg   grrr    --  -123    ----    11122331',
-        'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
-        'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
-        'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
-        'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
-        'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
-        'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
-        'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
-        'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
-        'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
-        'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
-        'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
-        'cloister.png   4   reg   gggg    --  ----    ----    11111111',
-        'city1.png      5   reg   cggg    --  ----    1---    --111111',
-        'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
-        'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
-        'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
+        ##########################################
+        # Cities
+        ##########################################
+        'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221',
+        # 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
+        # 'city4.png      1   reg   cccc    --  ----    1111    --------',
+        # 'road4.png      1   reg   rrrr    --  1234    ----    12233441',
+        # 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
+        # 'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
+        # 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
+        # 'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
+        # 'road3.png      4   reg   grrr    --  -123    ----    11122331',
+        # 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
+        # 'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
+        # 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
+        # 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
+        # 'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
+        # 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
+        # 'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
+        # 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
+        # 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
+        # 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
+        # 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
+        # 'cloister.png   4   reg   gggg    --  ----    ----    11111111',
+        # 'city1.png      5   reg   cggg    --  ----    1---    --111111',
+        # 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
+        # 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
+        # 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
       ]
 
     tileSets = for tileDef in tileDefinitions
@@ -402,8 +452,10 @@ class World
               added = true
 
       else if edge.type is 'city'
-        # TODO: Handle this
-        console.log('city')
+        for city in @cities
+          if not added and city.has(otherRow, otherCol, otherEdge.city)
+            city.add(row, col, dir, edge.city)
+            added = true
 
       else if edge.type is 'grass'
         # TODO: Handle this
@@ -429,12 +481,17 @@ class World
           if not added
               @roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd))
 
+        else if edge.type is 'city'
+          for city in @cities
+            if not added and city.has(row, col, edge.city)
+              city.add(row, col, dir, edge.city)
+              added = true
+
+          if not added
+            @cities.push(new City(row, col, dir, edge.city))
+
 
 world = new World()
-
-# for tile in world.tiles
-#   world.randomlyPlaceTile(tile, world.findValidPositions(tile))
-
 world.drawBoard()
 world.next()
 
@@ -443,6 +500,10 @@ print_features = (all) ->
   for road in world.roads
     if all or road.finished
       console.log(road.toString())
+
+  for city in world.cities
+    if all or city.finished
+      console.log(city.toString())
 
 $('#features_completed').click(->
   print_features(false)
@@ -464,3 +525,5 @@ $('#go').click(->
 
   world.drawBoard()
 ).attr('disabled', '')
+
+$('#left').click().click()

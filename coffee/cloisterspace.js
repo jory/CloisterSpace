@@ -1,5 +1,5 @@
 (function() {
-  var Edge, Road, Tile, World, print_features, world;
+  var City, Edge, Road, Tile, World, print_features, world;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -69,7 +69,7 @@
         if (this.rotation > 3) {
           this.rotation -= 4;
         }
-        this.rotationClass = 'r' + this.rotation;
+        this.rotationClass = "r" + this.rotation;
         _results2 = [];
         for (i = 1; 1 <= turns ? i <= turns : i >= turns; 1 <= turns ? i++ : i--) {
           tmp = this.edges.north;
@@ -96,13 +96,13 @@
   Road = (function() {
     function Road(row, col, edge, id, hasEnd) {
       var address;
-      address = row + ',' + col;
+      address = "" + row + "," + col;
       this.tiles = {};
       this.tiles[address] = true;
       this.ids = {};
-      this.ids[address + ',' + id] = true;
+      this.ids[address + ("," + id)] = true;
       this.edges = {};
-      this.edges[address + ',' + edge] = {
+      this.edges[address + ("," + edge)] = {
         row: row,
         col: col,
         edge: edge,
@@ -115,13 +115,13 @@
     }
     Road.prototype.add = function(row, col, edge, id, hasEnd) {
       var address;
-      address = row + ',' + col;
+      address = "" + row + "," + col;
       if (!this.tiles[address]) {
         this.length += 1;
         this.tiles[address] = true;
       }
-      this.ids[address + ',' + id] = true;
-      this.edges[address + ',' + edge] = {
+      this.ids[address + ("," + id)] = true;
+      this.edges[address + ("," + edge)] = {
         row: row,
         col: col,
         edge: edge,
@@ -136,7 +136,7 @@
       }
     };
     Road.prototype.has = function(row, col, id) {
-      return this.ids[row + ',' + col + ',' + id];
+      return this.ids["" + row + "," + col + "," + id];
     };
     Road.prototype.merge = function(other) {
       var e, edge, _ref, _results;
@@ -157,6 +157,52 @@
       return out.slice(0, -2) + ("), length: " + this.length + ", numEnds: " + this.numEnds + ", finished: " + this.finished);
     };
     return Road;
+  })();
+  City = (function() {
+    function City(row, col, edge, id) {
+      var address;
+      address = "" + row + "," + col;
+      this.tiles = {};
+      this.tiles[address] = true;
+      this.ids = {};
+      this.ids[address + ("," + id)] = true;
+      this.edges = {};
+      this.edges[address + ("," + edge)] = {
+        row: row,
+        col: col,
+        edge: edge,
+        id: id
+      };
+      this.length = 1;
+      this.finished = false;
+    }
+    City.prototype.add = function(row, col, edge, id) {
+      var address;
+      address = "" + row + "," + col;
+      if (!this.tiles[address]) {
+        this.length += 1;
+        this.tiles[address] = true;
+      }
+      this.ids[address + ("," + id)] = true;
+      return this.edges[address + ("," + edge)] = {
+        row: row,
+        col: col,
+        edge: edge,
+        id: id
+      };
+    };
+    City.prototype.has = function(row, col, id) {
+      return this.ids["" + row + "," + col + "," + id];
+    };
+    City.prototype.toString = function() {
+      var address, out;
+      out = "City: (";
+      for (address in this.tiles) {
+        out += "" + address + "; ";
+      }
+      return out.slice(0, -2) + ("), length: " + this.length + ", finished: " + this.finished);
+    };
+    return City;
   })();
   World = (function() {
     var adjacents, oppositeDirection;
@@ -209,7 +255,7 @@
         'g': 'grass',
         'c': 'city'
       };
-      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221', 'city4.png      1   reg   cccc    --  ----    1111    --------', 'road4.png      1   reg   rrrr    --  1234    ----    12233441', 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--', 'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--', 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--', 'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--', 'road3.png      4   reg   grrr    --  -123    ----    11122331', 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--', 'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--', 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111', 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--', 'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--', 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--', 'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--', 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221', 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111', 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--', 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111', 'cloister.png   4   reg   gggg    --  ----    ----    11111111', 'city1.png      5   reg   cggg    --  ----    1---    --111111', 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111', 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221', 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'];
+      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221'];
       tileSets = (function() {
         var _i, _len, _results;
         _results = [];
@@ -404,7 +450,7 @@
       }
     };
     World.prototype.placeTile = function(row, col, tile, neighbours) {
-      var added, dir, edge, handled, neighbour, offsets, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _results;
+      var added, city, dir, edge, handled, neighbour, offsets, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _results;
       if (neighbours.length === 0 && !tile.isStart) {
         throw "Invalid tile placement";
       }
@@ -457,7 +503,14 @@
             }
           }
         } else if (edge.type === 'city') {
-          console.log('city');
+          _ref3 = this.cities;
+          for (_l = 0, _len4 = _ref3.length; _l < _len4; _l++) {
+            city = _ref3[_l];
+            if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
+              city.add(row, col, dir, edge.city);
+              added = true;
+            }
+          }
         } else if (edge.type === 'grass') {
           console.log('grass');
         }
@@ -467,14 +520,14 @@
       for (dir in handled) {
         seen = handled[dir];
         _results.push((function() {
-          var _l, _len4, _ref3;
+          var _len5, _len6, _m, _n, _ref4, _ref5;
           if (!seen) {
             edge = tile.edges[dir];
             added = false;
             if (edge.type === 'road') {
-              _ref3 = this.roads;
-              for (_l = 0, _len4 = _ref3.length; _l < _len4; _l++) {
-                road = _ref3[_l];
+              _ref4 = this.roads;
+              for (_m = 0, _len5 = _ref4.length; _m < _len5; _m++) {
+                road = _ref4[_m];
                 if (!added && road.has(row, col, edge.road)) {
                   road.add(row, col, dir, edge.road, tile.hasRoadEnd);
                   added = true;
@@ -482,6 +535,18 @@
               }
               if (!added) {
                 return this.roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd));
+              }
+            } else if (edge.type === 'city') {
+              _ref5 = this.cities;
+              for (_n = 0, _len6 = _ref5.length; _n < _len6; _n++) {
+                city = _ref5[_n];
+                if (!added && city.has(row, col, edge.city)) {
+                  city.add(row, col, dir, edge.city);
+                  added = true;
+                }
+              }
+              if (!added) {
+                return this.cities.push(new City(row, col, dir, edge.city));
               }
             }
           }
@@ -495,13 +560,20 @@
   world.drawBoard();
   world.next();
   print_features = function(all) {
-    var road, _i, _len, _ref, _results;
+    var city, road, _i, _j, _len, _len2, _ref, _ref2, _results;
     console.log('------------------------------------------');
     _ref = world.roads;
-    _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       road = _ref[_i];
-      _results.push(all || road.finished ? console.log(road.toString()) : void 0);
+      if (all || road.finished) {
+        console.log(road.toString());
+      }
+    }
+    _ref2 = world.cities;
+    _results = [];
+    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+      city = _ref2[_j];
+      _results.push(all || city.finished ? console.log(city.toString()) : void 0);
     }
     return _results;
   };
@@ -525,4 +597,5 @@
     $('.candidate').unbind().attr('class', '');
     return world.drawBoard();
   }).attr('disabled', '');
+  $('#left').click().click();
 }).call(this);
