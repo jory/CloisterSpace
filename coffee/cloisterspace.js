@@ -1,5 +1,5 @@
 (function() {
-  var City, Edge, Road, Tile, World, print_features, world;
+  var City, Edge, Road, Tile, World, city, print_features, world, _i, _len, _ref;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -209,11 +209,11 @@
       var address, offset, otherAddress, otherCol, otherRow;
       address = "" + row + "," + col;
       if (!this.tiles[address]) {
+        this.tiles[address] = true;
         this.length += 1;
         if (hasPennant) {
           this.numPennants += 1;
         }
-        this.tiles[address] = true;
       }
       this.ids[address + ("," + id)] = true;
       this.edges[address + ("," + edge)] = {
@@ -241,14 +241,13 @@
       return this.ids["" + row + "," + col + "," + id];
     };
     City.prototype.merge = function(other) {
-      var e, edge, _ref, _results;
+      var e, edge, _ref;
       _ref = other.edges;
-      _results = [];
       for (e in _ref) {
         edge = _ref[e];
-        _results.push(this.add(edge.row, edge.col, edge.edge, edge.id, edge.hasPennant));
+        this.add(edge.row, edge.col, edge.edge, edge.id, false);
       }
-      return _results;
+      return this.numPennants += other.numPennants;
     };
     City.prototype.toString = function() {
       var address, out;
@@ -311,7 +310,7 @@
         'g': 'grass',
         'c': 'city'
       };
-      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221', 'city4.png      1   reg   cccc    --  ----    1111    --------', 'road4.png      1   reg   rrrr    --  1234    ----    12233441', 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--', 'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--', 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--', 'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--', 'road3.png      4   reg   grrr    --  -123    ----    11122331', 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--', 'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--', 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111', 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--', 'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--', 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--', 'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--', 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221', 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111', 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--', 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111', 'cloister.png   4   reg   gggg    --  ----    ----    11111111', 'city1.png      5   reg   cggg    --  ----    1---    --111111', 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111', 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221', 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'];
+      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221', 'city4q.png     1   reg   cccc    --  ----    1111    --------', 'road4.png      1   reg   rrrr    --  1234    ----    12233441', 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--', 'city3q.png     1   reg   ccgc    --  ----    11-1    ----11--', 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--', 'city3qr.png    2   reg   ccrc    --  --1-    11-1    ----12--', 'road3.png      4   reg   grrr    --  -123    ----    11122331', 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--', 'city2weq.png   2   reg   gcgc    --  ----    -1-1    11--22--', 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111', 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--', 'city2nwq.png   2   reg   cggc    --  ----    1--1    --1111--', 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--', 'city2nwqr.png  2   reg   crrc    --  -11-    1--1    --1221--', 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221', 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111', 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--', 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111', 'cloister.png   4   reg   gggg    --  ----    ----    11111111', 'city1.png      5   reg   cggg    --  ----    1---    --111111', 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111', 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221', 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'];
       tileSets = (function() {
         var _i, _len, _results;
         _results = [];
@@ -339,7 +338,7 @@
             return _results2;
           })()).length;
           hasRoadEnd = roadEdgeCount === 1 || roadEdgeCount === 3 || roadEdgeCount === 4;
-          hasPennant = __indexOf.call(image, 's') >= 0;
+          hasPennant = __indexOf.call(image, 'q') >= 0;
           north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1]);
           east = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3]);
           south = new Edge(edgeDefs[edges[2]], road[2], city[2], grass[4], grass[5]);
@@ -686,5 +685,11 @@
     return world.drawBoard();
   }).attr('disabled', '');
   $('#go').click();
-  $('#features_completed').click();
+  _ref = world.cities;
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    city = _ref[_i];
+    if (city.numPennants > 0) {
+      console.log(city.toString());
+    }
+  }
 }).call(this);
