@@ -25,10 +25,11 @@
   })();
   Tile = (function() {
     var oppositeDirection;
-    function Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, isStart) {
+    function Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isStart) {
       this.image = image;
       this.hasTwoCities = hasTwoCities;
       this.hasRoadEnd = hasRoadEnd;
+      this.hasPennant = hasPennant;
       this.isStart = isStart;
       this.edges = {
         north: north,
@@ -154,13 +155,13 @@
       for (address in this.tiles) {
         out += "" + address + "; ";
       }
-      return out.slice(0, -2) + ("), length: " + this.length + ", numEnds: " + this.numEnds + ", finished: " + this.finished);
+      return out.slice(0, -2) + ("), length: " + this.length + ", finished: " + this.finished + ", numEnds: " + this.numEnds);
     };
     return Road;
   })();
   City = (function() {
     var adjacents, oppositeDirection;
-    function City(row, col, edge, id) {
+    function City(row, col, edge, id, hasPennant) {
       var address;
       address = "" + row + "," + col;
       this.tiles = {};
@@ -177,6 +178,7 @@
       this.openEdges = [];
       this.openEdges.push(address + ("," + edge));
       this.length = 1;
+      this.numPennants = hasPennant ? 1 : 0;
       this.finished = false;
     }
     oppositeDirection = {
@@ -203,11 +205,14 @@
         col: -1
       }
     };
-    City.prototype.add = function(row, col, edge, id) {
+    City.prototype.add = function(row, col, edge, id, hasPennant) {
       var address, offset, otherAddress, otherCol, otherRow;
       address = "" + row + "," + col;
       if (!this.tiles[address]) {
         this.length += 1;
+        if (hasPennant) {
+          this.numPennants += 1;
+        }
         this.tiles[address] = true;
       }
       this.ids[address + ("," + id)] = true;
@@ -241,7 +246,7 @@
       _results = [];
       for (e in _ref) {
         edge = _ref[e];
-        _results.push(this.add(edge.row, edge.col, edge.edge, edge.id));
+        _results.push(this.add(edge.row, edge.col, edge.edge, edge.id, edge.hasPennant));
       }
       return _results;
     };
@@ -251,7 +256,7 @@
       for (address in this.tiles) {
         out += "" + address + "; ";
       }
-      return out.slice(0, -2) + ("), length: " + this.length + ", finished: " + this.finished);
+      return out.slice(0, -2) + ("), length: " + this.length + ", finished: " + this.finished + ", numPennants: " + this.numPennants);
     };
     return City;
   })();
@@ -300,7 +305,7 @@
       "west": "east"
     };
     World.prototype.generateRandomTileSet = function() {
-      var city, count, east, edge, edgeDefs, edges, grass, hasRoadEnd, hasTwoCities, i, image, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
+      var city, count, east, edge, edgeDefs, edges, grass, hasPennant, hasRoadEnd, hasTwoCities, i, image, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
       edgeDefs = {
         'r': 'road',
         'g': 'grass',
@@ -334,6 +339,7 @@
             return _results2;
           })()).length;
           hasRoadEnd = roadEdgeCount === 1 || roadEdgeCount === 3 || roadEdgeCount === 4;
+          hasPennant = __indexOf.call(image, 's') >= 0;
           north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1]);
           east = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3]);
           south = new Edge(edgeDefs[edges[2]], road[2], city[2], grass[4], grass[5]);
@@ -342,14 +348,17 @@
             var _results2;
             _results2 = [];
             for (i = 1; 1 <= count ? i <= count : i >= count; 1 <= count ? i++ : i--) {
-              _results2.push(new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, isStart));
+              _results2.push(new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isStart));
             }
             return _results2;
           })());
         }
         return _results;
       })();
-      return tiles = (_ref = []).concat.apply(_ref, tileSets);
+      tiles = (_ref = []).concat.apply(_ref, tileSets);
+      return [tiles[0]].concat(_(tiles.slice(1, (tiles.length + 1) || 9e9)).sortBy(function() {
+        return Math.random();
+      }));
     };
     World.prototype.findValidPositions = function(tile) {
       var candidate, candidates, col, i, invalids, offsets, other, otherCol, otherRow, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4;
@@ -567,7 +576,7 @@
             for (_m = 0, _len5 = _ref4.length; _m < _len5; _m++) {
               city = _ref4[_m];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
-                city.add(row, col, dir, edge.city);
+                city.add(row, col, dir, edge.city, tile.hasPennant);
                 cities.push(city);
                 added = true;
               }
@@ -603,12 +612,12 @@
               for (_o = 0, _len7 = _ref6.length; _o < _len7; _o++) {
                 city = _ref6[_o];
                 if (!added && city.has(row, col, edge.city)) {
-                  city.add(row, col, dir, edge.city);
+                  city.add(row, col, dir, edge.city, tile.hasPennant);
                   added = true;
                 }
               }
               if (!added) {
-                return this.cities.push(new City(row, col, dir, edge.city));
+                return this.cities.push(new City(row, col, dir, edge.city, tile.hasPennant));
               }
             }
           }
@@ -622,28 +631,45 @@
   world.drawBoard();
   world.next();
   print_features = function(all) {
-    var city, road, _i, _j, _len, _len2, _ref, _ref2, _results;
+    var city, farm, road, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3, _results;
     console.log('------------------------------------------');
-    _ref = world.roads;
+    _ref = world.cities;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      road = _ref[_i];
+      city = _ref[_i];
+      if (all || city.finished) {
+        console.log(city.toString());
+      }
+    }
+    _ref2 = world.roads;
+    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+      road = _ref2[_j];
       if (all || road.finished) {
         console.log(road.toString());
       }
     }
-    _ref2 = world.cities;
+    _ref3 = world.farms;
     _results = [];
-    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-      city = _ref2[_j];
-      _results.push(all || city.finished ? console.log(city.toString()) : void 0);
+    for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
+      farm = _ref3[_k];
+      _results.push(all ? console.log(farm.toString()) : void 0);
     }
     return _results;
   };
+  $('#features_all').click(function() {
+    return print_features(true);
+  });
   $('#features_completed').click(function() {
     return print_features(false);
   });
-  $('#features_all').click(function() {
-    return print_features(true);
+  $('#features_farms').click(function() {
+    var farm, _i, _len, _ref, _results;
+    _ref = world.farms;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      farm = _ref[_i];
+      _results.push(console.log(farm.toString()));
+    }
+    return _results;
   });
   $('#go').click(function() {
     var tile, _i, _len, _ref;

@@ -6,7 +6,7 @@ class Edge
 
 
 class Tile
-  constructor: (@image, north, east, south, west, @hasTwoCities, @hasRoadEnd, @isStart) ->
+  constructor: (@image, north, east, south, west, @hasTwoCities, @hasRoadEnd, @hasPennant, @isStart) ->
     @edges =
       north: north
       east:  east
@@ -108,11 +108,11 @@ class Road
     out = "Road: ("
     for address of @tiles
       out += "#{address}; "
-    out.slice(0, -2) + "), length: #{@length}, numEnds: #{@numEnds}, finished: #{@finished}"
+    out.slice(0, -2) + "), length: #{@length}, finished: #{@finished}, numEnds: #{@numEnds}"
 
 
 class City
-  constructor: (row, col, edge, id) ->
+  constructor: (row, col, edge, id, hasPennant) ->
     address = "#{row},#{col}"
 
     @tiles = {}
@@ -132,6 +132,8 @@ class City
     @openEdges.push(address + ",#{edge}")
 
     @length = 1
+
+    @numPennants = if hasPennant then 1 else 0
 
     @finished = false
 
@@ -155,11 +157,13 @@ class City
       row: 0
       col:-1
 
-  add: (row, col, edge, id) ->
+  add: (row, col, edge, id, hasPennant) ->
     address = "#{row},#{col}"
 
     if not @tiles[address]
       @length += 1
+      if hasPennant
+        @numPennants += 1
       @tiles[address] = true
 
     @ids[address + ",#{id}"] = true
@@ -190,13 +194,13 @@ class City
 
   merge: (other) ->
     for e, edge of other.edges
-      @add(edge.row, edge.col, edge.edge, edge.id)
+      @add(edge.row, edge.col, edge.edge, edge.id, edge.hasPennant)
 
   toString: ->
     out = "City: ("
     for address of @tiles
       out += "#{address}; "
-    out.slice(0, -2) + "), length: #{@length}, finished: #{@finished}"
+    out.slice(0, -2) + "), length: #{@length}, finished: #{@finished}, numPennants: #{@numPennants}"
 
 
 class World
@@ -292,6 +296,7 @@ class World
 
       roadEdgeCount = (edge for edge in edges when edge is 'r').length
       hasRoadEnd = (roadEdgeCount is 1 or roadEdgeCount is 3 or roadEdgeCount is 4)
+      hasPennant = 's' in image
 
       north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1])
       east  = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3])
@@ -299,12 +304,12 @@ class World
       west  = new Edge(edgeDefs[edges[3]], road[3], city[3], grass[6], grass[7])
 
       for i in [1..count]
-        new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, isStart)
+        new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isStart)
 
     tiles = [].concat tileSets...
 
     # This operation is ugly, but necessary
-    # [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
+    [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
 
   findValidPositions: (tile) ->
     candidates = []
@@ -501,7 +506,7 @@ class World
         else
           for city in @cities
             if not added and city.has(otherRow, otherCol, otherEdge.city)
-              city.add(row, col, dir, edge.city)
+              city.add(row, col, dir, edge.city, tile.hasPennant)
               cities.push(city)
               added = true
 
@@ -532,11 +537,11 @@ class World
         else if edge.type is 'city'
           for city in @cities
             if not added and city.has(row, col, edge.city)
-              city.add(row, col, dir, edge.city)
+              city.add(row, col, dir, edge.city, tile.hasPennant)
               added = true
 
           if not added
-            @cities.push(new City(row, col, dir, edge.city))
+            @cities.push(new City(row, col, dir, edge.city, tile.hasPennant))
 
 
 world = new World()
@@ -545,20 +550,31 @@ world.next()
 
 print_features = (all) ->
   console.log('------------------------------------------')
-  for road in world.roads
-    if all or road.finished
-      console.log(road.toString())
 
   for city in world.cities
     if all or city.finished
       console.log(city.toString())
 
+  for road in world.roads
+    if all or road.finished
+      console.log(road.toString())
+
+  for farm in world.farms
+    if all
+      console.log(farm.toString())
+
+
+$('#features_all').click(->
+  print_features(true)
+)
+
 $('#features_completed').click(->
   print_features(false)
 )
 
-$('#features_all').click(->
-  print_features(true)
+$('#features_farms').click(->
+  for farm in world.farms
+    console.log(farm.toString())
 )
 
 $('#go').click(->
