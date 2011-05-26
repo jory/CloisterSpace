@@ -182,6 +182,8 @@ class City
 
     if @openEdges.length is 0
       @finished = true
+    else
+      @finished = false
 
   has: (row, col, id) ->
     @ids["#{row},#{col},#{id}"]
@@ -247,40 +249,30 @@ class World
 
     tileDefinitions = [
         'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
-        ##########################################
-        # Cities
-        ##########################################
-        'road2sw.png    1   reg   ggrr    --  --11    ----    11111221',
-        'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221',
-        'road2sw.png    1   reg   ggrr    --  --11    ----    11111221',
-        'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221',
-        'road2sw.png    1   reg   ggrr    --  --11    ----    11111221',
-        'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221',
+        'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
         'city4.png      1   reg   cccc    --  ----    1111    --------',
-        # 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
-        # 'city4.png      1   reg   cccc    --  ----    1111    --------',
-        # 'road4.png      1   reg   rrrr    --  1234    ----    12233441',
-        # 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
-        # 'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
-        # 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
-        # 'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
-        # 'road3.png      4   reg   grrr    --  -123    ----    11122331',
-        # 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
-        # 'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
-        # 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
-        # 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
-        # 'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
-        # 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
-        # 'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
-        # 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
-        # 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
-        # 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
-        # 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
-        # 'cloister.png   4   reg   gggg    --  ----    ----    11111111',
-        # 'city1.png      5   reg   cggg    --  ----    1---    --111111',
-        # 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
-        # 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
-        # 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
+        'road4.png      1   reg   rrrr    --  1234    ----    12233441',
+        'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
+        'city3s.png     1   reg   ccgc    --  ----    11-1    ----11--',
+        'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
+        'city3sr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
+        'road3.png      4   reg   grrr    --  -123    ----    11122331',
+        'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
+        'city2wes.png   2   reg   gcgc    --  ----    -1-1    11--22--',
+        'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
+        'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
+        'city2nws.png   2   reg   cggc    --  ----    1--1    --1111--',
+        'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
+        'city2nwsr.png  2   reg   crrc    --  -11-    1--1    --1221--',
+        'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
+        'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
+        'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
+        'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
+        'cloister.png   4   reg   gggg    --  ----    ----    11111111',
+        'city1.png      5   reg   cggg    --  ----    1---    --111111',
+        'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
+        'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
+        'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
       ]
 
     tileSets = for tileDef in tileDefinitions
