@@ -1,5 +1,5 @@
 (function() {
-  var Edge, Road, Tile, World, road, tile, world, _i, _j, _len, _len2, _ref, _ref2;
+  var Edge, Road, Tile, World, print_features, tile, world, _i, _len, _ref;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -152,7 +152,7 @@
       var address, out;
       out = "Road: (";
       for (address in this.tiles) {
-        out += address + "; ";
+        out += "" + address + "; ";
       }
       return out.slice(0, -2) + ("), length: " + this.length + ", numEnds: " + this.numEnds + ", finished: " + this.finished);
     };
@@ -323,7 +323,7 @@
           if (tile != null) {
             td = $(("<td row='" + row + "' col='" + col + "'>") + ("<img src='img/" + tile.image + "' class='" + tile.rotationClass + "'/></td>"));
             if (tile.isStart) {
-              td.attr('style', 'background: red');
+              td.attr('class', 'debug');
             }
           }
           tr.append(td);
@@ -384,7 +384,7 @@
         candidates = this.findValidPositions(tile);
         return this.drawCandidates(tile, candidates);
       } else {
-        return $('#sideboard').empty();
+        return $('#sideboard').attr('style', 'display: hidden');
       }
     };
     World.prototype.placeTile = function(row, col, tile, neighbours) {
@@ -482,12 +482,21 @@
     world.randomlyPlaceTile(tile, world.findValidPositions(tile));
   }
   world.drawBoard();
-  console.log('------------------------------------------');
-  _ref2 = world.roads;
-  for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-    road = _ref2[_j];
-    if (road.finished) {
-      console.log(road.toString());
+  print_features = function(all) {
+    var road, _j, _len2, _ref2, _results;
+    console.log('------------------------------------------');
+    _ref2 = world.roads;
+    _results = [];
+    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+      road = _ref2[_j];
+      _results.push(all || road.finished ? console.log(road.toString()) : void 0);
     }
-  }
+    return _results;
+  };
+  $('#features_completed').click(function() {
+    return print_features(false);
+  });
+  $('#features_all').click(function() {
+    return print_features(true);
+  });
 }).call(this);

@@ -3,10 +3,18 @@
   <body>
     <div id="board"></div>
     <div id="sideboard">
-      <input id="left" type="button" value="Left"/>
-      <img id="candidate" src="img/city1.png"/>
-      <input id="right" type="button" value="Right"/>
-      <input id="go" type="button" value="Go!"/>
+      <div id="controls">
+        <img id="candidate" src=""/>
+        <div style="float: right">
+          <input id="left" type="button" value="Left"/><br/>
+          <input id="right" type="button" value="Right"/>
+        </div>
+      </div>
+      <div id="debug">
+        <input id="go" type="button" value="Go!"/><br/>
+        <input id="features_all" type="button" value="Features: All"/><br/>
+        <input id="features_completed" type="button" value="Features: Completed"/>
+      </div>
     </div>
   </body>
   <script src="lib/jquery-1.5.1.min.js"></script>

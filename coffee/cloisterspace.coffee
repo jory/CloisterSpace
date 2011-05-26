@@ -107,7 +107,7 @@ class Road
   toString: ->
     out = "Road: ("
     for address of @tiles
-      out += address + "; "
+      out += "#{address}; "
     out.slice(0, -2) + "), length: #{@length}, numEnds: #{@numEnds}, finished: #{@finished}"
 
 
@@ -275,7 +275,7 @@ class World
                  "<img src='img/#{tile.image}' class='#{tile.rotationClass}'/></td>")
           # TODO: Remove this!
           if tile.isStart
-            td.attr('style', 'background: red')
+            td.attr('class', 'debug')
         tr.append(td)
       tbody.append(tr)
     $("#board").empty().append(table)
@@ -320,7 +320,7 @@ class World
       candidates = @findValidPositions(tile)
       @drawCandidates(tile, candidates)
     else
-      $('#sideboard').empty()
+      $('#sideboard').attr('style', 'display: hidden')
 
   placeTile: (row, col, tile, neighbours) ->
     if neighbours.length is 0 and not tile.isStart
@@ -419,7 +419,16 @@ for tile in world.tiles
 
 world.drawBoard()
 
-console.log('------------------------------------------')
-for road in world.roads
-  if road.finished
-    console.log(road.toString())
+print_features = (all) ->
+  console.log('------------------------------------------')
+  for road in world.roads
+    if all or road.finished
+      console.log(road.toString())
+
+$('#features_completed').click(->
+  print_features(false)
+)
+
+$('#features_all').click(->
+  print_features(true)
+)

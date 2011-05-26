@@ -17,17 +17,34 @@
 tr {
     height: 90px;
 }
+
 td {
     width: 90px;
+}
+
+.candidate {
+    background: #002b36;
 }
 
 #board {
     overflow: scroll;
 }
+
 #sideboard {
     height: 120px;
 }
 
-.candidate {
+#candidate {
+    float: left;
+    height: 90px;
+    width: 90px;
     background: #002b36;
+}
+
+#controls {
+    float: left;
+}
+
+.debug {
+    background: red;
 }
