@@ -116,12 +116,13 @@ class World
     @tiles = @generateRandomTileSet()
 
     @center = @minrow = @maxrow = @mincol = @maxcol = @tiles.length
+    @maxSize = @center * 2
 
     @roads = []
     @cities = []
     @farms = []
 
-    @board = (new Array(@center * 2) for i in [1..@center * 2])
+    @board = (new Array(@maxSize) for i in [1..@maxSize])
     @placeTile(@center, @center, @tiles.shift(), [])
 
   adjacents =
@@ -231,12 +232,16 @@ class World
             invalids = 0
 
             for side, offsets of adjacents
-              other = @board[row + offsets.row][col + offsets.col]
-              if other?
-                if tile.connectableTo(other, side)
-                  valids.push(side)
-                else
-                  invalids++
+              otherRow = row + offsets.row
+              otherCol = col + offsets.col
+
+              if 0 <= otherRow < @maxSize and 0 <= otherCol < @maxSize
+                other = @board[otherRow][otherCol]
+                if other?
+                  if tile.connectableTo(other, side)
+                    valids.push(side)
+                  else
+                    invalids++
 
             if valids.length > 0 and invalids is 0
               candidates.push([row, col, turns, valids])
@@ -268,15 +273,16 @@ class World
     for row in [@minrow - 1..@maxrow + 1]
       tr = $("<tr></tr>")
       for col in [@mincol - 1..@maxcol + 1]
-        td = $("<td row='#{row}' col='#{col}'></td>")
-        tile = @board[row][col]
-        if tile?
-          td = $("<td row='#{row}' col='#{col}'>" +
-                 "<img src='img/#{tile.image}' class='#{tile.rotationClass}'/></td>")
-          # TODO: Remove this!
-          if tile.isStart
-            td.attr('class', 'debug')
-        tr.append(td)
+        if 0 <= row < @maxSize and 0 <= col < @maxSize
+          td = $("<td row='#{row}' col='#{col}'></td>")
+          tile = @board[row][col]
+          if tile?
+            td = $("<td row='#{row}' col='#{col}'>" +
+                   "<img src='img/#{tile.image}' class='#{tile.rotationClass}'/></td>")
+            # TODO: Remove this!
+            if tile.isStart
+              td.attr('class', 'debug')
+          tr.append(td)
       tbody.append(tr)
     $("#board").empty().append(table)
 
@@ -288,6 +294,9 @@ class World
 
         for item in actives
           item.attr('class', '').unbind()
+
+        $('#left').unbind().attr('disabled', 'disabled')
+        $('#right').unbind().attr('disabled', 'disabled')
 
         @placeTile(row, col, tile, neighbours)
         @drawBoard()
@@ -302,17 +311,23 @@ class World
       for item in actives
         item.attr('class', '').unbind()
 
+      $('#left').unbind().attr('disabled', 'disabled')
+      $('#right').unbind().attr('disabled', 'disabled')
+
       tile.rotate(-1)
       @drawCandidates(tile, candidates)
-    )
+    ).attr('disabled', '')
 
     $('#right').unbind().click(=>
       for item in actives
         item.attr('class', '').unbind()
 
+      $('#left').unbind().attr('disabled', 'disabled')
+      $('#right').unbind().attr('disabled', 'disabled')
+
       tile.rotate(1)
       @drawCandidates(tile, candidates)
-    )
+    ).attr('disabled', '')
 
   next: ->
     if @tiles.length > 0
@@ -320,7 +335,9 @@ class World
       candidates = @findValidPositions(tile)
       @drawCandidates(tile, candidates)
     else
-      $('#sideboard').attr('style', 'display: hidden')
+      $('#candidate').attr('style', 'visibility: hidden')
+      $('#left').unbind()
+      $('#right').unbind()
 
   placeTile: (row, col, tile, neighbours) ->
     if neighbours.length is 0 and not tile.isStart
