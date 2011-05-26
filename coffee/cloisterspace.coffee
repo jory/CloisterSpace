@@ -253,6 +253,8 @@ class World
       'c': 'city'
 
     tileDefinitions = [
+        # FOOFOOFOO
+        ##########################################
         'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
         'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
         'city4q.png     1   reg   cccc    --  ----    1111    --------',
@@ -501,6 +503,7 @@ class World
         if not tile.hasTwoCities and cities.length > 0
           for city in @cities
             if not added and city.has(otherRow, otherCol, otherEdge.city)
+              cities[0].add(row, col, dir, edge.city, tile.hasPennant)
               cities[0].merge(city)
               @cities.remove(city)
               added = true
@@ -594,7 +597,3 @@ $('#go').click(->
 ).attr('disabled', '')
 
 $('#go').click()
-for city in world.cities
-  if city.numPennants > 0
-    console.log(city.toString())
-

@@ -1,5 +1,5 @@
 (function() {
-  var City, Edge, Road, Tile, World, city, print_features, world, _i, _len, _ref;
+  var City, Edge, Road, Tile, World, print_features, world;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -565,6 +565,7 @@
             for (_l = 0, _len4 = _ref3.length; _l < _len4; _l++) {
               city = _ref3[_l];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
+                cities[0].add(row, col, dir, edge.city, tile.hasPennant);
                 cities[0].merge(city);
                 this.cities.remove(city);
                 added = true;
@@ -685,11 +686,4 @@
     return world.drawBoard();
   }).attr('disabled', '');
   $('#go').click();
-  _ref = world.cities;
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    city = _ref[_i];
-    if (city.numPennants > 0) {
-      console.log(city.toString());
-    }
-  }
 }).call(this);
