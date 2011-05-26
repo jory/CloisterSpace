@@ -128,9 +128,32 @@ class City
       edge: edge
       id: id
 
+    @openEdges = []
+    @openEdges.push(address + ",#{edge}")
+
     @length = 1
 
     @finished = false
+
+  oppositeDirection =
+    "north": "south"
+    "east" : "west"
+    "south": "north"
+    "west" : "east"
+
+  adjacents =
+    north:
+      row:-1
+      col: 0
+    east:
+      row: 0
+      col: 1
+    south:
+      row: 1
+      col: 0
+    west:
+      row: 0
+      col:-1
 
   add: (row, col, edge, id) ->
     address = "#{row},#{col}"
@@ -146,6 +169,19 @@ class City
       col: col
       edge: edge
       id: id
+
+    offset = adjacents[edge]
+    otherRow = row + offset.row
+    otherCol = col + offset.col
+    otherAddress = "#{otherRow},#{otherCol},#{oppositeDirection[edge]}"
+
+    if otherAddress in @openEdges
+      @openEdges.remove(otherAddress)
+    else
+      @openEdges.push(address + ",#{edge}")
+
+    if @openEdges.length is 0
+      @finished = true
 
   has: (row, col, id) ->
     @ids["#{row},#{col},#{id}"]

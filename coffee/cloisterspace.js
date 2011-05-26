@@ -159,6 +159,7 @@
     return Road;
   })();
   City = (function() {
+    var adjacents, oppositeDirection;
     function City(row, col, edge, id) {
       var address;
       address = "" + row + "," + col;
@@ -173,23 +174,61 @@
         edge: edge,
         id: id
       };
+      this.openEdges = [];
+      this.openEdges.push(address + ("," + edge));
       this.length = 1;
       this.finished = false;
     }
+    oppositeDirection = {
+      "north": "south",
+      "east": "west",
+      "south": "north",
+      "west": "east"
+    };
+    adjacents = {
+      north: {
+        row: -1,
+        col: 0
+      },
+      east: {
+        row: 0,
+        col: 1
+      },
+      south: {
+        row: 1,
+        col: 0
+      },
+      west: {
+        row: 0,
+        col: -1
+      }
+    };
     City.prototype.add = function(row, col, edge, id) {
-      var address;
+      var address, offset, otherAddress, otherCol, otherRow;
       address = "" + row + "," + col;
       if (!this.tiles[address]) {
         this.length += 1;
         this.tiles[address] = true;
       }
       this.ids[address + ("," + id)] = true;
-      return this.edges[address + ("," + edge)] = {
+      this.edges[address + ("," + edge)] = {
         row: row,
         col: col,
         edge: edge,
         id: id
       };
+      offset = adjacents[edge];
+      otherRow = row + offset.row;
+      otherCol = col + offset.col;
+      otherAddress = "" + otherRow + "," + otherCol + "," + oppositeDirection[edge];
+      if (__indexOf.call(this.openEdges, otherAddress) >= 0) {
+        this.openEdges.remove(otherAddress);
+      } else {
+        this.openEdges.push(address + ("," + edge));
+      }
+      if (this.openEdges.length === 0) {
+        return this.finished = true;
+      }
     };
     City.prototype.has = function(row, col, id) {
       return this.ids["" + row + "," + col + "," + id];
