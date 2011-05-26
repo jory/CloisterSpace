@@ -273,6 +273,9 @@ class World
         if tile?
           td = $("<td row='#{row}' col='#{col}'>" +
                  "<img src='img/#{tile.image}' class='#{tile.rotationClass}'/></td>")
+          # TODO: Remove this!
+          if tile.isStart
+            td.attr('style', 'background: red')
         tr.append(td)
       tbody.append(tr)
     $("#board").empty().append(table)
@@ -408,10 +411,6 @@ class World
           if not added
               @roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd))
 
-    for road in @roads
-      console.log(road.toString())
-    console.log('----------------------------------------')
-
 
 world = new World()
 
@@ -419,3 +418,8 @@ for tile in world.tiles
   world.randomlyPlaceTile(tile, world.findValidPositions(tile))
 
 world.drawBoard()
+
+console.log('------------------------------------------')
+for road in world.roads
+  if road.finished
+    console.log(road.toString())

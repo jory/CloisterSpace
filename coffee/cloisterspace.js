@@ -1,5 +1,5 @@
 (function() {
-  var Edge, Road, Tile, World, tile, world, _i, _len, _ref;
+  var Edge, Road, Tile, World, road, tile, world, _i, _j, _len, _len2, _ref, _ref2;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -322,6 +322,9 @@
           tile = this.board[row][col];
           if (tile != null) {
             td = $(("<td row='" + row + "' col='" + col + "'>") + ("<img src='img/" + tile.image + "' class='" + tile.rotationClass + "'/></td>"));
+            if (tile.isStart) {
+              td.attr('style', 'background: red');
+            }
           }
           tr.append(td);
         }
@@ -385,7 +388,7 @@
       }
     };
     World.prototype.placeTile = function(row, col, tile, neighbours) {
-      var added, dir, edge, handled, neighbour, offsets, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _m, _ref, _ref2, _ref3, _ref4;
+      var added, dir, edge, handled, neighbour, offsets, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _results;
       if (neighbours.length === 0 && !tile.isStart) {
         throw "Invalid tile placement";
       }
@@ -444,32 +447,31 @@
         }
         handled[dir] = true;
       }
+      _results = [];
       for (dir in handled) {
         seen = handled[dir];
-        if (!seen) {
-          edge = tile.edges[dir];
-          added = false;
-          if (edge.type === 'road') {
-            _ref3 = this.roads;
-            for (_l = 0, _len4 = _ref3.length; _l < _len4; _l++) {
-              road = _ref3[_l];
-              if (!added && road.has(row, col, edge.road)) {
-                road.add(row, col, dir, edge.road, tile.hasRoadEnd);
-                added = true;
+        _results.push((function() {
+          var _l, _len4, _ref3;
+          if (!seen) {
+            edge = tile.edges[dir];
+            added = false;
+            if (edge.type === 'road') {
+              _ref3 = this.roads;
+              for (_l = 0, _len4 = _ref3.length; _l < _len4; _l++) {
+                road = _ref3[_l];
+                if (!added && road.has(row, col, edge.road)) {
+                  road.add(row, col, dir, edge.road, tile.hasRoadEnd);
+                  added = true;
+                }
+              }
+              if (!added) {
+                return this.roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd));
               }
             }
-            if (!added) {
-              this.roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd));
-            }
           }
-        }
+        }).call(this));
       }
-      _ref4 = this.roads;
-      for (_m = 0, _len5 = _ref4.length; _m < _len5; _m++) {
-        road = _ref4[_m];
-        console.log(road.toString());
-      }
-      return console.log('----------------------------------------');
+      return _results;
     };
     return World;
   })();
@@ -480,4 +482,12 @@
     world.randomlyPlaceTile(tile, world.findValidPositions(tile));
   }
   world.drawBoard();
+  console.log('------------------------------------------');
+  _ref2 = world.roads;
+  for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+    road = _ref2[_j];
+    if (road.finished) {
+      console.log(road.toString());
+    }
+  }
 }).call(this);
