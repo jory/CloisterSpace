@@ -186,6 +186,10 @@ class City
   has: (row, col, id) ->
     @ids["#{row},#{col},#{id}"]
 
+  merge: (other) ->
+    for e, edge of other.edges
+      @add(edge.row, edge.col, edge.edge, edge.id)
+
   toString: ->
     out = "City: ("
     for address of @tiles
@@ -246,7 +250,13 @@ class World
         ##########################################
         # Cities
         ##########################################
+        'road2sw.png    1   reg   ggrr    --  --11    ----    11111221',
         'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221',
+        'road2sw.png    1   reg   ggrr    --  --11    ----    11111221',
+        'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221',
+        'road2sw.png    1   reg   ggrr    --  --11    ----    11111221',
+        'city1rwe.png   1   reg   crgr    --  -1-1    1---    --122221',
+        'city4.png      1   reg   cccc    --  ----    1111    --------',
         # 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
         # 'city4.png      1   reg   cccc    --  ----    1111    --------',
         # 'road4.png      1   reg   rrrr    --  1234    ----    12233441',
@@ -302,7 +312,7 @@ class World
     tiles = [].concat tileSets...
 
     # This operation is ugly, but necessary
-    [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
+    # [tiles[0]].concat _(tiles[1..tiles.length]).sortBy(-> Math.random())
 
   findValidPositions: (tile) ->
     candidates = []
@@ -447,6 +457,7 @@ class World
     #  - roads must have two ends (or make a fully closed loop)
     #
     #  - farms... are complicated
+    #    - have to handle the grass type edge, but also have to handle the grass on each individual edge.
 
     handled =
       north: false
@@ -455,6 +466,7 @@ class World
       west:  false
 
     roads = []
+    cities = []
 
     for dir in neighbours
       offsets = adjacents[dir]
@@ -488,10 +500,18 @@ class World
               added = true
 
       else if edge.type is 'city'
-        for city in @cities
-          if not added and city.has(otherRow, otherCol, otherEdge.city)
-            city.add(row, col, dir, edge.city)
-            added = true
+        if not tile.hasTwoCities and cities.length > 0
+          for city in @cities
+            if not added and city.has(otherRow, otherCol, otherEdge.city)
+              cities[0].merge(city)
+              @cities.remove(city)
+              added = true
+        else
+          for city in @cities
+            if not added and city.has(otherRow, otherCol, otherEdge.city)
+              city.add(row, col, dir, edge.city)
+              cities.push(city)
+              added = true
 
       else if edge.type is 'grass'
         # TODO: Handle this
@@ -562,4 +582,3 @@ $('#go').click(->
   world.drawBoard()
 ).attr('disabled', '')
 
-$('#left').click().click()
