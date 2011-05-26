@@ -164,14 +164,15 @@
       var i;
       this.tiles = this.generateRandomTileSet();
       this.center = this.minrow = this.maxrow = this.mincol = this.maxcol = this.tiles.length;
+      this.maxSize = this.center * 2;
       this.roads = [];
       this.cities = [];
       this.farms = [];
       this.board = (function() {
         var _ref, _results;
         _results = [];
-        for (i = 1, _ref = this.center * 2; 1 <= _ref ? i <= _ref : i >= _ref; 1 <= _ref ? i++ : i--) {
-          _results.push(new Array(this.center * 2));
+        for (i = 1, _ref = this.maxSize; 1 <= _ref ? i <= _ref : i >= _ref; 1 <= _ref ? i++ : i--) {
+          _results.push(new Array(this.maxSize));
         }
         return _results;
       }).call(this);
@@ -257,7 +258,7 @@
       }));
     };
     World.prototype.findValidPositions = function(tile) {
-      var candidate, candidates, col, i, invalids, offsets, other, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4;
+      var candidate, candidates, col, i, invalids, offsets, other, otherCol, otherRow, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4;
       candidates = [];
       for (row = _ref = this.minrow - 1, _ref2 = this.maxrow + 1; _ref <= _ref2 ? row <= _ref2 : row >= _ref2; _ref <= _ref2 ? row++ : row--) {
         for (col = _ref3 = this.mincol - 1, _ref4 = this.maxcol + 1; _ref3 <= _ref4 ? col <= _ref4 : col >= _ref4; _ref3 <= _ref4 ? col++ : col--) {
@@ -268,12 +269,16 @@
               invalids = 0;
               for (side in adjacents) {
                 offsets = adjacents[side];
-                other = this.board[row + offsets.row][col + offsets.col];
-                if (other != null) {
-                  if (tile.connectableTo(other, side)) {
-                    valids.push(side);
-                  } else {
-                    invalids++;
+                otherRow = row + offsets.row;
+                otherCol = col + offsets.col;
+                if ((0 <= otherRow && otherRow < this.maxSize) && (0 <= otherCol && otherCol < this.maxSize)) {
+                  other = this.board[otherRow][otherCol];
+                  if (other != null) {
+                    if (tile.connectableTo(other, side)) {
+                      valids.push(side);
+                    } else {
+                      invalids++;
+                    }
                   }
                 }
               }
@@ -318,15 +323,17 @@
       for (row = _ref = this.minrow - 1, _ref2 = this.maxrow + 1; _ref <= _ref2 ? row <= _ref2 : row >= _ref2; _ref <= _ref2 ? row++ : row--) {
         tr = $("<tr></tr>");
         for (col = _ref3 = this.mincol - 1, _ref4 = this.maxcol + 1; _ref3 <= _ref4 ? col <= _ref4 : col >= _ref4; _ref3 <= _ref4 ? col++ : col--) {
-          td = $("<td row='" + row + "' col='" + col + "'></td>");
-          tile = this.board[row][col];
-          if (tile != null) {
-            td = $(("<td row='" + row + "' col='" + col + "'>") + ("<img src='img/" + tile.image + "' class='" + tile.rotationClass + "'/></td>"));
-            if (tile.isStart) {
-              td.attr('class', 'debug');
+          if ((0 <= row && row < this.maxSize) && (0 <= col && col < this.maxSize)) {
+            td = $("<td row='" + row + "' col='" + col + "'></td>");
+            tile = this.board[row][col];
+            if (tile != null) {
+              td = $(("<td row='" + row + "' col='" + col + "'>") + ("<img src='img/" + tile.image + "' class='" + tile.rotationClass + "'/></td>"));
+              if (tile.isStart) {
+                td.attr('class', 'debug');
+              }
             }
+            tr.append(td);
           }
-          tr.append(td);
         }
         tbody.append(tr);
       }
@@ -342,7 +349,10 @@
             item = actives[_i];
             item.attr('class', '').unbind();
           }
+          $('#left').unbind().attr('disabled', 'disabled');
+          $('#right').unbind().attr('disabled', 'disabled');
           this.placeTile(row, col, tile, neighbours);
+          this.tiles.shift();
           this.drawBoard();
           return this.next();
         }, this)).attr('class', 'candidate');
@@ -364,27 +374,33 @@
           item = actives[_i];
           item.attr('class', '').unbind();
         }
+        $('#left').unbind().attr('disabled', 'disabled');
+        $('#right').unbind().attr('disabled', 'disabled');
         tile.rotate(-1);
         return this.drawCandidates(tile, candidates);
-      }, this));
+      }, this)).attr('disabled', '');
       return $('#right').unbind().click(__bind(function() {
         var item, _i, _len;
         for (_i = 0, _len = actives.length; _i < _len; _i++) {
           item = actives[_i];
           item.attr('class', '').unbind();
         }
+        $('#left').unbind().attr('disabled', 'disabled');
+        $('#right').unbind().attr('disabled', 'disabled');
         tile.rotate(1);
         return this.drawCandidates(tile, candidates);
-      }, this));
+      }, this)).attr('disabled', '');
     };
     World.prototype.next = function() {
       var candidates, tile;
       if (this.tiles.length > 0) {
-        tile = this.tiles.shift();
+        tile = this.tiles[0];
         candidates = this.findValidPositions(tile);
         return this.drawCandidates(tile, candidates);
       } else {
-        return $('#sideboard').attr('style', 'display: hidden');
+        $('#candidate').attr('style', 'visibility: hidden');
+        $('#left').unbind();
+        return $('#right').unbind();
       }
     };
     World.prototype.placeTile = function(row, col, tile, neighbours) {
@@ -495,4 +511,18 @@
   $('#features_all').click(function() {
     return print_features(true);
   });
+  $('#go').click(function() {
+    var tile, _i, _len, _ref;
+    _ref = world.tiles;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      tile = _ref[_i];
+      world.randomlyPlaceTile(tile, world.findValidPositions(tile));
+    }
+    $('#go').unbind().attr('disabled', 'disabled');
+    $('#candidate').attr('style', 'visibility: hidden');
+    $('#left').unbind();
+    $('#right').unbind();
+    $('.candidate').unbind().attr('class', '');
+    return world.drawBoard();
+  }).attr('disabled', '');
 }).call(this);

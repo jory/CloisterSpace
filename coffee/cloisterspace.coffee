@@ -299,6 +299,7 @@ class World
         $('#right').unbind().attr('disabled', 'disabled')
 
         @placeTile(row, col, tile, neighbours)
+        @tiles.shift()
         @drawBoard()
         @next()
       ).attr('class', 'candidate')
@@ -331,7 +332,7 @@ class World
 
   next: ->
     if @tiles.length > 0
-      tile = @tiles.shift()
+      tile = @tiles[0]
       candidates = @findValidPositions(tile)
       @drawCandidates(tile, candidates)
     else
@@ -450,3 +451,16 @@ $('#features_completed').click(->
 $('#features_all').click(->
   print_features(true)
 )
+
+$('#go').click(->
+  for tile in world.tiles
+    world.randomlyPlaceTile(tile, world.findValidPositions(tile))
+
+  $('#go').unbind().attr('disabled', 'disabled')
+  $('#candidate').attr('style', 'visibility: hidden')
+  $('#left').unbind()
+  $('#right').unbind()
+  $('.candidate').unbind().attr('class', '')
+
+  world.drawBoard()
+).attr('disabled', '')
