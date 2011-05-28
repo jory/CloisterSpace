@@ -1,5 +1,5 @@
 (function() {
-  var City, Edge, Road, Tile, World, print_features, world;
+  var City, Edge, Road, Tile, World, adjacents, oppositeDirection, print_features, world;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -10,6 +10,30 @@
     var t, _ref;
     if ((t = this.indexOf(e)) > -1) {
       return ([].splice.apply(this, [t, t - t + 1].concat(_ref = [])), _ref);
+    }
+  };
+  oppositeDirection = {
+    "north": "south",
+    "east": "west",
+    "south": "north",
+    "west": "east"
+  };
+  adjacents = {
+    north: {
+      row: -1,
+      col: 0
+    },
+    east: {
+      row: 0,
+      col: 1
+    },
+    south: {
+      row: 1,
+      col: 0
+    },
+    west: {
+      row: 0,
+      col: -1
     }
   };
   Edge = (function() {
@@ -24,7 +48,6 @@
     return Edge;
   })();
   Tile = (function() {
-    var oppositeDirection;
     function Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isStart) {
       this.image = image;
       this.hasTwoCities = hasTwoCities;
@@ -40,12 +63,6 @@
       this.rotation = 0;
       this.rotationClass = 'r0';
     }
-    oppositeDirection = {
-      "north": "south",
-      "east": "west",
-      "south": "north",
-      "west": "east"
-    };
     Tile.prototype.rotate = function(turns) {
       var i, tmp, _i, _ref, _results, _results2;
       if (__indexOf.call((function() {
@@ -160,7 +177,6 @@
     return Road;
   })();
   City = (function() {
-    var adjacents, oppositeDirection;
     function City(row, col, edge, id, hasPennant) {
       var address;
       address = "" + row + "," + col;
@@ -181,30 +197,6 @@
       this.numPennants = hasPennant ? 1 : 0;
       this.finished = false;
     }
-    oppositeDirection = {
-      "north": "south",
-      "east": "west",
-      "south": "north",
-      "west": "east"
-    };
-    adjacents = {
-      north: {
-        row: -1,
-        col: 0
-      },
-      east: {
-        row: 0,
-        col: 1
-      },
-      south: {
-        row: 1,
-        col: 0
-      },
-      west: {
-        row: 0,
-        col: -1
-      }
-    };
     City.prototype.add = function(row, col, edge, id, hasPennant) {
       var address, offset, otherAddress, otherCol, otherRow;
       address = "" + row + "," + col;
@@ -260,7 +252,6 @@
     return City;
   })();
   World = (function() {
-    var adjacents, oppositeDirection;
     function World() {
       var i;
       this.tiles = this.generateRandomTileSet();
@@ -279,30 +270,6 @@
       }).call(this);
       this.placeTile(this.center, this.center, this.tiles.shift(), []);
     }
-    adjacents = {
-      north: {
-        row: -1,
-        col: 0
-      },
-      east: {
-        row: 0,
-        col: 1
-      },
-      south: {
-        row: 1,
-        col: 0
-      },
-      west: {
-        row: 0,
-        col: -1
-      }
-    };
-    oppositeDirection = {
-      "north": "south",
-      "east": "west",
-      "south": "north",
-      "west": "east"
-    };
     World.prototype.generateRandomTileSet = function() {
       var city, count, east, edge, edgeDefs, edges, grass, hasPennant, hasRoadEnd, hasTwoCities, i, image, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
       edgeDefs = {

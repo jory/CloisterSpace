@@ -1,5 +1,25 @@
 Array::remove = (e) -> @[t..t] = [] if (t = @.indexOf(e)) > -1
 
+oppositeDirection =
+  "north": "south"
+  "east" : "west"
+  "south": "north"
+  "west" : "east"
+
+adjacents =
+  north:
+    row:-1
+    col: 0
+  east:
+    row: 0
+    col: 1
+  south:
+    row: 1
+    col: 0
+  west:
+    row: 0
+    col:-1
+
 class Edge
   constructor: (@type, @road, @city, @grassA, @grassB) ->
     @string = "type: #{@type}, road: #{@road}, city: #{@city}, grassA: #{@grassA}, grassB: #{@grassB}"
@@ -15,12 +35,6 @@ class Tile
 
     @rotation = 0
     @rotationClass = 'r0'
-
-  oppositeDirection =
-    "north": "south"
-    "east" : "west"
-    "south": "north"
-    "west" : "east"
 
   rotate: (turns) ->
     if turns not in [-3..3]
@@ -137,26 +151,6 @@ class City
 
     @finished = false
 
-  oppositeDirection =
-    "north": "south"
-    "east" : "west"
-    "south": "north"
-    "west" : "east"
-
-  adjacents =
-    north:
-      row:-1
-      col: 0
-    east:
-      row: 0
-      col: 1
-    south:
-      row: 1
-      col: 0
-    west:
-      row: 0
-      col:-1
-
   add: (row, col, edge, id, hasPennant) ->
     address = "#{row},#{col}"
 
@@ -217,26 +211,6 @@ class World
 
     @board = (new Array(@maxSize) for i in [1..@maxSize])
     @placeTile(@center, @center, @tiles.shift(), [])
-
-  adjacents =
-    north:
-      row:-1
-      col: 0
-    east:
-      row: 0
-      col: 1
-    south:
-      row: 1
-      col: 0
-    west:
-      row: 0
-      col:-1
-
-  oppositeDirection =
-    "north": "south"
-    "east" : "west"
-    "south": "north"
-    "west" : "east"
 
   generateRandomTileSet: ->
     # order of edge specs is NESW
