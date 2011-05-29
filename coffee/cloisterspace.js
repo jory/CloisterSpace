@@ -1,5 +1,5 @@
 (function() {
-  var City, Edge, Road, Tile, World, adjacents, oppositeDirection, print_features, world;
+  var City, Edge, Road, Tile, World, adjacents, offset, oppositeDirection, print_features, world;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -35,6 +35,11 @@
       row: 0,
       col: -1
     }
+  };
+  offset = function(edge, row, col) {
+    var offsets;
+    offsets = adjacents[edge];
+    return [row + offsets.row, col + offsets.col];
   };
   Edge = (function() {
     function Edge(type, road, city, grassA, grassB) {
@@ -104,10 +109,8 @@
         return this.rotate(4 - this.rotation);
       }
     };
-    Tile.prototype.connectableTo = function(other, from) {
-      var to;
-      to = oppositeDirection[from];
-      return this.edges[from].type === other.edges[to].type;
+    Tile.prototype.connectableTo = function(from, other) {
+      return this.edges[from].type === other.edges[oppositeDirection[from]].type;
     };
     return Tile;
   })();
@@ -198,7 +201,7 @@
       this.finished = false;
     }
     City.prototype.add = function(row, col, edge, id, hasPennant) {
-      var address, offset, otherAddress, otherCol, otherRow;
+      var address, otherAddress, otherCol, otherRow, _ref;
       address = "" + row + "," + col;
       if (!this.tiles[address]) {
         this.tiles[address] = true;
@@ -214,9 +217,7 @@
         edge: edge,
         id: id
       };
-      offset = adjacents[edge];
-      otherRow = row + offset.row;
-      otherCol = col + offset.col;
+      _ref = offset(edge, row, col), otherRow = _ref[0], otherCol = _ref[1];
       otherAddress = "" + otherRow + "," + otherCol + "," + oppositeDirection[edge];
       if (__indexOf.call(this.openEdges, otherAddress) >= 0) {
         this.openEdges.remove(otherAddress);
@@ -327,7 +328,7 @@
       }));
     };
     World.prototype.findValidPositions = function(tile) {
-      var candidate, candidates, col, i, invalids, offsets, other, otherCol, otherRow, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4;
+      var candidate, candidates, col, i, invalids, other, otherCol, otherRow, row, side, sortedCandidates, turns, valids, _i, _len, _ref, _ref2, _ref3, _ref4, _ref5;
       candidates = [];
       for (row = _ref = this.minrow - 1, _ref2 = this.maxrow + 1; _ref <= _ref2 ? row <= _ref2 : row >= _ref2; _ref <= _ref2 ? row++ : row--) {
         for (col = _ref3 = this.mincol - 1, _ref4 = this.maxcol + 1; _ref3 <= _ref4 ? col <= _ref4 : col >= _ref4; _ref3 <= _ref4 ? col++ : col--) {
@@ -337,13 +338,11 @@
               valids = [];
               invalids = 0;
               for (side in adjacents) {
-                offsets = adjacents[side];
-                otherRow = row + offsets.row;
-                otherCol = col + offsets.col;
+                _ref5 = offset(side, row, col), otherRow = _ref5[0], otherCol = _ref5[1];
                 if ((0 <= otherRow && otherRow < this.maxSize) && (0 <= otherCol && otherCol < this.maxSize)) {
                   other = this.board[otherRow][otherCol];
                   if (other != null) {
-                    if (tile.connectableTo(other, side)) {
+                    if (tile.connectableTo(side, other)) {
                       valids.push(side);
                     } else {
                       invalids++;
@@ -409,17 +408,20 @@
       return $("#board").empty().append(table);
     };
     World.prototype.drawCandidates = function(tile, candidates) {
-      var actives, attach, candidate, col, neighbours, row, turns;
+      var actives, attach, candidate, col, disableAll, neighbours, row, turns;
       $('#candidate').attr('src', "img/" + tile.image).attr('class', tile.rotationClass);
+      disableAll = function() {
+        var item, _i, _len;
+        for (_i = 0, _len = actives.length; _i < _len; _i++) {
+          item = actives[_i];
+          item.attr('class', '').unbind();
+        }
+        $('#left').unbind().attr('disabled', 'disabled');
+        return $('#right').unbind().attr('disabled', 'disabled');
+      };
       attach = __bind(function(cell, row, col, neighbours) {
         return cell.unbind().click(__bind(function() {
-          var item, _i, _len;
-          for (_i = 0, _len = actives.length; _i < _len; _i++) {
-            item = actives[_i];
-            item.attr('class', '').unbind();
-          }
-          $('#left').unbind().attr('disabled', 'disabled');
-          $('#right').unbind().attr('disabled', 'disabled');
+          disableAll();
           this.placeTile(row, col, tile, neighbours);
           this.tiles.shift();
           this.drawBoard();
@@ -438,24 +440,12 @@
         return _results;
       })();
       $('#left').unbind().click(__bind(function() {
-        var item, _i, _len;
-        for (_i = 0, _len = actives.length; _i < _len; _i++) {
-          item = actives[_i];
-          item.attr('class', '').unbind();
-        }
-        $('#left').unbind().attr('disabled', 'disabled');
-        $('#right').unbind().attr('disabled', 'disabled');
+        disableAll();
         tile.rotate(-1);
         return this.drawCandidates(tile, candidates);
       }, this)).attr('disabled', '');
       return $('#right').unbind().click(__bind(function() {
-        var item, _i, _len;
-        for (_i = 0, _len = actives.length; _i < _len; _i++) {
-          item = actives[_i];
-          item.attr('class', '').unbind();
-        }
-        $('#left').unbind().attr('disabled', 'disabled');
-        $('#right').unbind().attr('disabled', 'disabled');
+        disableAll();
         tile.rotate(1);
         return this.drawCandidates(tile, candidates);
       }, this)).attr('disabled', '');
@@ -473,7 +463,7 @@
       }
     };
     World.prototype.placeTile = function(row, col, tile, neighbours) {
-      var added, cities, city, dir, edge, handled, neighbour, offsets, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _m, _ref, _ref2, _ref3, _ref4, _results;
+      var added, cities, city, dir, edge, handled, neighbour, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _m, _ref, _ref2, _ref3, _ref4, _ref5, _results;
       if (neighbours.length === 0 && !tile.isStart) {
         throw "Invalid tile placement";
       }
@@ -492,18 +482,16 @@
       cities = [];
       for (_i = 0, _len = neighbours.length; _i < _len; _i++) {
         dir = neighbours[_i];
-        offsets = adjacents[dir];
-        otherRow = row + offsets.row;
-        otherCol = col + offsets.col;
+        _ref = offset(dir, row, col), otherRow = _ref[0], otherCol = _ref[1];
         neighbour = this.board[otherRow][otherCol];
         edge = tile.edges[dir];
         otherEdge = neighbour.edges[oppositeDirection[dir]];
         added = false;
         if (edge.type === 'road') {
           if (!tile.hasRoadEnd && roads.length > 0) {
-            _ref = this.roads;
-            for (_j = 0, _len2 = _ref.length; _j < _len2; _j++) {
-              road = _ref[_j];
+            _ref2 = this.roads;
+            for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+              road = _ref2[_j];
               if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
                 if (roads[0] === road) {
                   road.finished = true;
@@ -516,9 +504,9 @@
               }
             }
           } else {
-            _ref2 = this.roads;
-            for (_k = 0, _len3 = _ref2.length; _k < _len3; _k++) {
-              road = _ref2[_k];
+            _ref3 = this.roads;
+            for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
+              road = _ref3[_k];
               if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
                 road.add(row, col, dir, edge.road, tile.hasRoadEnd);
                 roads.push(road);
@@ -528,9 +516,9 @@
           }
         } else if (edge.type === 'city') {
           if (!tile.hasTwoCities && cities.length > 0) {
-            _ref3 = this.cities;
-            for (_l = 0, _len4 = _ref3.length; _l < _len4; _l++) {
-              city = _ref3[_l];
+            _ref4 = this.cities;
+            for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
+              city = _ref4[_l];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
                 cities[0].add(row, col, dir, edge.city, tile.hasPennant);
                 cities[0].merge(city);
@@ -539,9 +527,9 @@
               }
             }
           } else {
-            _ref4 = this.cities;
-            for (_m = 0, _len5 = _ref4.length; _m < _len5; _m++) {
-              city = _ref4[_m];
+            _ref5 = this.cities;
+            for (_m = 0, _len5 = _ref5.length; _m < _len5; _m++) {
+              city = _ref5[_m];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
                 city.add(row, col, dir, edge.city, tile.hasPennant);
                 cities.push(city);
@@ -558,14 +546,14 @@
       for (dir in handled) {
         seen = handled[dir];
         _results.push((function() {
-          var _len6, _len7, _n, _o, _ref5, _ref6;
+          var _len6, _len7, _n, _o, _ref6, _ref7;
           if (!seen) {
             edge = tile.edges[dir];
             added = false;
             if (edge.type === 'road') {
-              _ref5 = this.roads;
-              for (_n = 0, _len6 = _ref5.length; _n < _len6; _n++) {
-                road = _ref5[_n];
+              _ref6 = this.roads;
+              for (_n = 0, _len6 = _ref6.length; _n < _len6; _n++) {
+                road = _ref6[_n];
                 if (!added && road.has(row, col, edge.road)) {
                   road.add(row, col, dir, edge.road, tile.hasRoadEnd);
                   added = true;
@@ -575,9 +563,9 @@
                 return this.roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd));
               }
             } else if (edge.type === 'city') {
-              _ref6 = this.cities;
-              for (_o = 0, _len7 = _ref6.length; _o < _len7; _o++) {
-                city = _ref6[_o];
+              _ref7 = this.cities;
+              for (_o = 0, _len7 = _ref7.length; _o < _len7; _o++) {
+                city = _ref7[_o];
                 if (!added && city.has(row, col, edge.city)) {
                   city.add(row, col, dir, edge.city, tile.hasPennant);
                   added = true;
@@ -652,5 +640,4 @@
     $('.candidate').unbind().attr('class', '');
     return world.drawBoard();
   }).attr('disabled', '');
-  $('#go').click();
 }).call(this);

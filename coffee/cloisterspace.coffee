@@ -20,6 +20,11 @@ adjacents =
     row: 0
     col:-1
 
+offset = (edge, row, col) ->
+  offsets = adjacents[edge]
+  [row + offsets.row, col + offsets.col]
+
+
 class Edge
   constructor: (@type, @road, @city, @grassA, @grassB) ->
     @string = "type: #{@type}, road: #{@road}, city: #{@city}, grassA: #{@grassA}, grassB: #{@grassB}"
@@ -61,9 +66,8 @@ class Tile
   reset: ->
     @rotate(4 - @rotation) if @rotation > 0
 
-  connectableTo: (other, from) ->
-    to = oppositeDirection[from]
-    @edges[from].type is other.edges[to].type
+  connectableTo: (from, other) ->
+    @edges[from].type is other.edges[oppositeDirection[from]].type
 
 
 class Road
@@ -168,9 +172,7 @@ class City
       edge: edge
       id: id
 
-    offset = adjacents[edge]
-    otherRow = row + offset.row
-    otherCol = col + offset.col
+    [otherRow, otherCol] = offset(edge, row, col)
     otherAddress = "#{otherRow},#{otherCol},#{oppositeDirection[edge]}"
 
     if otherAddress in @openEdges
@@ -301,14 +303,13 @@ class World
             valids = []
             invalids = 0
 
-            for side, offsets of adjacents
-              otherRow = row + offsets.row
-              otherCol = col + offsets.col
+            for side of adjacents
+              [otherRow, otherCol] = offset(side, row, col)
 
               if 0 <= otherRow < @maxSize and 0 <= otherCol < @maxSize
                 other = @board[otherRow][otherCol]
                 if other?
-                  if tile.connectableTo(other, side)
+                  if tile.connectableTo(side, other)
                     valids.push(side)
                   else
                     invalids++
@@ -359,15 +360,16 @@ class World
   drawCandidates: (tile, candidates) ->
     $('#candidate').attr('src', "img/#{tile.image}").attr('class', tile.rotationClass)
 
+    disableAll = ->
+      for item in actives
+        item.attr('class', '').unbind()
+
+      $('#left').unbind().attr('disabled', 'disabled')
+      $('#right').unbind().attr('disabled', 'disabled')
+
     attach = (cell, row, col, neighbours) =>
       cell.unbind().click(=>
-
-        for item in actives
-          item.attr('class', '').unbind()
-
-        $('#left').unbind().attr('disabled', 'disabled')
-        $('#right').unbind().attr('disabled', 'disabled')
-
+        disableAll()
         @placeTile(row, col, tile, neighbours)
         @tiles.shift()
         @drawBoard()
@@ -379,23 +381,13 @@ class World
       attach($("td[row=#{row}][col=#{col}]"), row, col, neighbours)
 
     $('#left').unbind().click(=>
-      for item in actives
-        item.attr('class', '').unbind()
-
-      $('#left').unbind().attr('disabled', 'disabled')
-      $('#right').unbind().attr('disabled', 'disabled')
-
+      disableAll()
       tile.rotate(-1)
       @drawCandidates(tile, candidates)
     ).attr('disabled', '')
 
     $('#right').unbind().click(=>
-      for item in actives
-        item.attr('class', '').unbind()
-
-      $('#left').unbind().attr('disabled', 'disabled')
-      $('#right').unbind().attr('disabled', 'disabled')
-
+      disableAll()
       tile.rotate(1)
       @drawCandidates(tile, candidates)
     ).attr('disabled', '')
@@ -443,9 +435,7 @@ class World
     cities = []
 
     for dir in neighbours
-      offsets = adjacents[dir]
-      otherRow = row + offsets.row
-      otherCol = col + offsets.col
+      [otherRow, otherCol] = offset(dir, row, col)
       neighbour = @board[otherRow][otherCol]
 
       edge = tile.edges[dir]
@@ -569,5 +559,3 @@ $('#go').click(->
 
   world.drawBoard()
 ).attr('disabled', '')
-
-$('#go').click()
