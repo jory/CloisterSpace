@@ -320,7 +320,8 @@ class World
       west  = new Edge(edgeDefs[edges[3]], road[3], city[3], grass[6], grass[7])
 
       for i in [1..count]
-        new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isCloister, isStart)
+        new Tile(image, north, east, south, west,
+                 hasTwoCities, hasRoadEnd, hasPennant, isCloister, isStart)
 
     tiles = [].concat tileSets...
 
@@ -472,7 +473,8 @@ class World
     #  - roads must have two ends (or make a fully closed loop)
     #
     #  - farms... are complicated
-    #    - have to handle the grass type edge, but also have to handle the grass on each individual edge.
+    #    - have to handle the grass type edge, but also have to handle the
+    #      grass on each individual edge.
 
     if tile.isCloister
       cloister = new Cloister(row, col)
@@ -538,6 +540,9 @@ class World
               city.add(row, col, dir, edge.city, tile.hasPennant)
               added = true
         else
+          # If you are adding a tile with two cities, or you do not
+          # yet have a merge candidate, you do not need to perform a
+          # merge.
           for city in @cities
             if not added and city.has(otherRow, otherCol, otherEdge.city)
               city.add(row, col, dir, edge.city, tile.hasPennant)
