@@ -1,5 +1,5 @@
 (function() {
-  var City, Edge, Road, Tile, World, adjacents, offset, oppositeDirection, print_features, world;
+  var City, Cloister, Edge, Road, Tile, World, adjacents, offset, oppositeDirection, print_features, world;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -53,11 +53,12 @@
     return Edge;
   })();
   Tile = (function() {
-    function Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isStart) {
+    function Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isCloister, isStart) {
       this.image = image;
       this.hasTwoCities = hasTwoCities;
       this.hasRoadEnd = hasRoadEnd;
       this.hasPennant = hasPennant;
+      this.isCloister = isCloister;
       this.isStart = isStart;
       this.edges = {
         north: north,
@@ -252,14 +253,53 @@
     };
     return City;
   })();
+  Cloister = (function() {
+    function Cloister(row, col) {
+      var colOffset, otherCol, otherRow, rowOffset, _ref, _ref2;
+      this.tiles = {};
+      this.tiles[row + "," + col] = true;
+      this.neighbours = {};
+      for (rowOffset = _ref = -1; _ref <= 1 ? rowOffset <= 1 : rowOffset >= 1; _ref <= 1 ? rowOffset++ : rowOffset--) {
+        for (colOffset = _ref2 = -1; _ref2 <= 1 ? colOffset <= 1 : colOffset >= 1; _ref2 <= 1 ? colOffset++ : colOffset--) {
+          if (!(rowOffset === 0 && colOffset === 0)) {
+            otherRow = row + rowOffset;
+            otherCol = col + colOffset;
+            this.neighbours[otherRow + ',' + otherCol] = {
+              row: otherRow,
+              col: otherCol
+            };
+          }
+        }
+      }
+      this.size = 1;
+      this.finished = false;
+    }
+    Cloister.prototype.add = function(row, col) {
+      this.tiles[row + "," + col] = true;
+      this.size += 1;
+      if (this.size === 9) {
+        return this.finished = true;
+      }
+    };
+    Cloister.prototype.toString = function() {
+      var address, out;
+      out = "Cloister: (";
+      for (address in this.tiles) {
+        out += "" + address + "; ";
+      }
+      return out.slice(0, -2) + ("), size: " + this.size + ", finished: " + this.finished);
+    };
+    return Cloister;
+  })();
   World = (function() {
     function World() {
       var i;
       this.tiles = this.generateRandomTileSet();
       this.center = this.minrow = this.maxrow = this.mincol = this.maxcol = this.tiles.length;
       this.maxSize = this.center * 2;
-      this.roads = [];
+      this.cloisters = [];
       this.cities = [];
+      this.roads = [];
       this.farms = [];
       this.board = (function() {
         var _ref, _results;
@@ -272,7 +312,7 @@
       this.placeTile(this.center, this.center, this.tiles.shift(), []);
     }
     World.prototype.generateRandomTileSet = function() {
-      var city, count, east, edge, edgeDefs, edges, grass, hasPennant, hasRoadEnd, hasTwoCities, i, image, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
+      var city, count, east, edge, edgeDefs, edges, grass, hasPennant, hasRoadEnd, hasTwoCities, i, image, isCloister, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
       edgeDefs = {
         'r': 'road',
         'g': 'grass',
@@ -290,6 +330,8 @@
           image = tile[0];
           isStart = tile[2] === 'start';
           hasTwoCities = tile[4] === '11';
+          hasPennant = __indexOf.call(image, 'q') >= 0;
+          isCloister = image.indexOf("cloister") >= 0;
           edges = tile[3].split('');
           road = tile[5].split('');
           city = tile[6].split('');
@@ -306,7 +348,6 @@
             return _results2;
           })()).length;
           hasRoadEnd = roadEdgeCount === 1 || roadEdgeCount === 3 || roadEdgeCount === 4;
-          hasPennant = __indexOf.call(image, 'q') >= 0;
           north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1]);
           east = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3]);
           south = new Edge(edgeDefs[edges[2]], road[2], city[2], grass[4], grass[5]);
@@ -315,7 +356,7 @@
             var _results2;
             _results2 = [];
             for (i = 1; 1 <= count ? i <= count : i >= count; 1 <= count ? i++ : i--) {
-              _results2.push(new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isStart));
+              _results2.push(new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isCloister, isStart));
             }
             return _results2;
           })());
@@ -463,7 +504,7 @@
       }
     };
     World.prototype.placeTile = function(row, col, tile, neighbours) {
-      var added, cities, city, dir, edge, handled, neighbour, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _m, _ref, _ref2, _ref3, _ref4, _ref5, _results;
+      var added, cities, city, cloister, dir, edge, handled, n, neighbour, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _m, _n, _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9, _results;
       if (neighbours.length === 0 && !tile.isStart) {
         throw "Invalid tile placement";
       }
@@ -472,6 +513,26 @@
       this.minrow = Math.min(this.minrow, row);
       this.maxcol = Math.max(this.maxcol, col);
       this.mincol = Math.min(this.mincol, col);
+      if (tile.isCloister) {
+        cloister = new Cloister(row, col);
+        _ref = cloister.neighbours;
+        for (n in _ref) {
+          neighbour = _ref[n];
+          if ((0 <= (_ref2 = neighbour.row) && _ref2 < this.maxSize) && (0 <= (_ref3 = neighbour.col) && _ref3 < this.maxSize)) {
+            if (this.board[neighbour.row][neighbour.col] != null) {
+              cloister.add(neighbour.row, neighbour.col);
+            }
+          }
+        }
+        this.cloisters.push(cloister);
+      }
+      _ref4 = this.cloisters;
+      for (_i = 0, _len = _ref4.length; _i < _len; _i++) {
+        cloister = _ref4[_i];
+        if (cloister.neighbours[row + "," + col]) {
+          cloister.add(row, col);
+        }
+      }
       handled = {
         north: false,
         south: false,
@@ -480,18 +541,18 @@
       };
       roads = [];
       cities = [];
-      for (_i = 0, _len = neighbours.length; _i < _len; _i++) {
-        dir = neighbours[_i];
-        _ref = offset(dir, row, col), otherRow = _ref[0], otherCol = _ref[1];
+      for (_j = 0, _len2 = neighbours.length; _j < _len2; _j++) {
+        dir = neighbours[_j];
+        _ref5 = offset(dir, row, col), otherRow = _ref5[0], otherCol = _ref5[1];
         neighbour = this.board[otherRow][otherCol];
         edge = tile.edges[dir];
         otherEdge = neighbour.edges[oppositeDirection[dir]];
         added = false;
         if (edge.type === 'road') {
           if (!tile.hasRoadEnd && roads.length > 0) {
-            _ref2 = this.roads;
-            for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-              road = _ref2[_j];
+            _ref6 = this.roads;
+            for (_k = 0, _len3 = _ref6.length; _k < _len3; _k++) {
+              road = _ref6[_k];
               if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
                 if (roads[0] === road) {
                   road.finished = true;
@@ -504,9 +565,9 @@
               }
             }
           } else {
-            _ref3 = this.roads;
-            for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
-              road = _ref3[_k];
+            _ref7 = this.roads;
+            for (_l = 0, _len4 = _ref7.length; _l < _len4; _l++) {
+              road = _ref7[_l];
               if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
                 road.add(row, col, dir, edge.road, tile.hasRoadEnd);
                 roads.push(road);
@@ -516,9 +577,9 @@
           }
         } else if (edge.type === 'city') {
           if (!tile.hasTwoCities && cities.length > 0) {
-            _ref4 = this.cities;
-            for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
-              city = _ref4[_l];
+            _ref8 = this.cities;
+            for (_m = 0, _len5 = _ref8.length; _m < _len5; _m++) {
+              city = _ref8[_m];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
                 cities[0].add(row, col, dir, edge.city, tile.hasPennant);
                 cities[0].merge(city);
@@ -527,9 +588,9 @@
               }
             }
           } else {
-            _ref5 = this.cities;
-            for (_m = 0, _len5 = _ref5.length; _m < _len5; _m++) {
-              city = _ref5[_m];
+            _ref9 = this.cities;
+            for (_n = 0, _len6 = _ref9.length; _n < _len6; _n++) {
+              city = _ref9[_n];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
                 city.add(row, col, dir, edge.city, tile.hasPennant);
                 cities.push(city);
@@ -546,14 +607,14 @@
       for (dir in handled) {
         seen = handled[dir];
         _results.push((function() {
-          var _len6, _len7, _n, _o, _ref6, _ref7;
+          var _len7, _len8, _o, _p, _ref10, _ref11;
           if (!seen) {
             edge = tile.edges[dir];
             added = false;
             if (edge.type === 'road') {
-              _ref6 = this.roads;
-              for (_n = 0, _len6 = _ref6.length; _n < _len6; _n++) {
-                road = _ref6[_n];
+              _ref10 = this.roads;
+              for (_o = 0, _len7 = _ref10.length; _o < _len7; _o++) {
+                road = _ref10[_o];
                 if (!added && road.has(row, col, edge.road)) {
                   road.add(row, col, dir, edge.road, tile.hasRoadEnd);
                   added = true;
@@ -563,9 +624,9 @@
                 return this.roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd));
               }
             } else if (edge.type === 'city') {
-              _ref7 = this.cities;
-              for (_o = 0, _len7 = _ref7.length; _o < _len7; _o++) {
-                city = _ref7[_o];
+              _ref11 = this.cities;
+              for (_p = 0, _len8 = _ref11.length; _p < _len8; _p++) {
+                city = _ref11[_p];
                 if (!added && city.has(row, col, edge.city)) {
                   city.add(row, col, dir, edge.city, tile.hasPennant);
                   added = true;
@@ -574,6 +635,8 @@
               if (!added) {
                 return this.cities.push(new City(row, col, dir, edge.city, tile.hasPennant));
               }
+            } else if (edge.type === 'grass') {
+              return console.log("Also grass");
             }
           }
         }).call(this));
@@ -586,26 +649,33 @@
   world.drawBoard();
   world.next();
   print_features = function(all) {
-    var city, farm, road, _i, _j, _k, _len, _len2, _len3, _ref, _ref2, _ref3, _results;
+    var city, cloister, farm, road, _i, _j, _k, _l, _len, _len2, _len3, _len4, _ref, _ref2, _ref3, _ref4, _results;
     console.log('------------------------------------------');
-    _ref = world.cities;
+    _ref = world.cloisters;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      city = _ref[_i];
+      cloister = _ref[_i];
+      if (all || cloister.finished) {
+        console.log(cloister.toString());
+      }
+    }
+    _ref2 = world.cities;
+    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+      city = _ref2[_j];
       if (all || city.finished) {
         console.log(city.toString());
       }
     }
-    _ref2 = world.roads;
-    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
-      road = _ref2[_j];
+    _ref3 = world.roads;
+    for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
+      road = _ref3[_k];
       if (all || road.finished) {
         console.log(road.toString());
       }
     }
-    _ref3 = world.farms;
+    _ref4 = world.farms;
     _results = [];
-    for (_k = 0, _len3 = _ref3.length; _k < _len3; _k++) {
-      farm = _ref3[_k];
+    for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
+      farm = _ref4[_l];
       _results.push(all ? console.log(farm.toString()) : void 0);
     }
     return _results;

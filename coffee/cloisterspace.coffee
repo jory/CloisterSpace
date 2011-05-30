@@ -24,14 +24,13 @@ offset = (edge, row, col) ->
   offsets = adjacents[edge]
   [row + offsets.row, col + offsets.col]
 
-
 class Edge
   constructor: (@type, @road, @city, @grassA, @grassB) ->
     @string = "type: #{@type}, road: #{@road}, city: #{@city}, grassA: #{@grassA}, grassB: #{@grassB}"
 
 
 class Tile
-  constructor: (@image, north, east, south, west, @hasTwoCities, @hasRoadEnd, @hasPennant, @isStart) ->
+  constructor: (@image, north, east, south, west, @hasTwoCities, @hasRoadEnd, @hasPennant, @isCloister, @isStart) ->
     @edges =
       north: north
       east:  east
@@ -200,6 +199,39 @@ class City
     out.slice(0, -2) + "), length: #{@length}, finished: #{@finished}, numPennants: #{@numPennants}"
 
 
+class Cloister
+  constructor: (row, col) ->
+    @tiles = {}
+    @tiles[row + "," + col] = true
+
+    @neighbours = {}
+    for rowOffset in [-1..1]
+      for colOffset in [-1..1]
+        if not (rowOffset is 0 and colOffset is 0)
+          otherRow = row + rowOffset
+          otherCol = col + colOffset
+          @neighbours[otherRow + ',' + otherCol] =
+            row: otherRow
+            col: otherCol
+
+    @size = 1
+
+    @finished = false
+
+  add: (row, col) ->
+    @tiles[row + "," + col] = true
+
+    @size += 1
+    if @size is 9
+      @finished = true
+
+  toString: ->
+    out = "Cloister: ("
+    for address of @tiles
+      out += "#{address}; "
+    out.slice(0, -2) + "), size: #{@size}, finished: #{@finished}"
+
+
 class World
   constructor: ->
     @tiles = @generateRandomTileSet()
@@ -207,8 +239,9 @@ class World
     @center = @minrow = @maxrow = @mincol = @maxcol = @tiles.length
     @maxSize = @center * 2
 
-    @roads = []
+    @cloisters = []
     @cities = []
+    @roads = []
     @farms = []
 
     @board = (new Array(@maxSize) for i in [1..@maxSize])
@@ -230,6 +263,7 @@ class World
 
     tileDefinitions = [
         # FOOFOOFOO
+        ##########################################
         ##########################################
         'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
         'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
@@ -267,6 +301,10 @@ class World
       image = tile[0]
       isStart = tile[2] is 'start'
       hasTwoCities = tile[4] is '11'
+      hasPennant = 'q' in image
+
+      # The line: 'cloister' in image, fails for some reason.
+      isCloister = image.indexOf("cloister") >= 0
 
       edges = tile[3].split('')
       road  = tile[5].split('')
@@ -275,7 +313,6 @@ class World
 
       roadEdgeCount = (edge for edge in edges when edge is 'r').length
       hasRoadEnd = (roadEdgeCount is 1 or roadEdgeCount is 3 or roadEdgeCount is 4)
-      hasPennant = 'q' in image
 
       north = new Edge(edgeDefs[edges[0]], road[0], city[0], grass[0], grass[1])
       east  = new Edge(edgeDefs[edges[1]], road[1], city[1], grass[2], grass[3])
@@ -283,7 +320,7 @@ class World
       west  = new Edge(edgeDefs[edges[3]], road[3], city[3], grass[6], grass[7])
 
       for i in [1..count]
-        new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isStart)
+        new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isCloister, isStart)
 
     tiles = [].concat tileSets...
 
@@ -415,7 +452,9 @@ class World
 
     # Connect the features of the current tile to the world-level features.
     #
-    # Keeping track of roads, cities and farms:
+    # - Cloisters operate on the tile level, rather than the edge level.
+    #
+    # Keeping track of roads, cities and farms (per edge):
     #
     #  - every city edge must be connected to another city edge. If any
     #    city edge is unconnected (i.e. singular), the city can't be complete
@@ -424,6 +463,20 @@ class World
     #
     #  - farms... are complicated
     #    - have to handle the grass type edge, but also have to handle the grass on each individual edge.
+
+    if tile.isCloister
+      cloister = new Cloister(row, col)
+
+      for n, neighbour of cloister.neighbours
+        if 0 <= neighbour.row < @maxSize and 0 <= neighbour.col < @maxSize
+          if @board[neighbour.row][neighbour.col]?
+            cloister.add(neighbour.row, neighbour.col)
+
+      @cloisters.push(cloister)
+
+    for cloister in @cloisters
+      if cloister.neighbours[row + "," + col]
+        cloister.add(row, col)
 
     handled =
       north: false
@@ -484,7 +537,6 @@ class World
 
       handled[dir] = true
 
-
     for dir, seen of handled
       if not seen
         edge = tile.edges[dir]
@@ -511,6 +563,10 @@ class World
           if not added
             @cities.push(new City(row, col, dir, edge.city, tile.hasPennant))
 
+        else if edge.type is 'grass'
+          # TODO: Handle this
+          console.log("Also grass")
+
 
 world = new World()
 world.drawBoard()
@@ -518,6 +574,10 @@ world.next()
 
 print_features = (all) ->
   console.log('------------------------------------------')
+
+  for cloister in world.cloisters
+    if all or cloister.finished
+      console.log(cloister.toString())
 
   for city in world.cities
     if all or city.finished
