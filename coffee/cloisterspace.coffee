@@ -616,6 +616,8 @@ $('#features_farms').click(->
 )
 
 $('#go').click(->
+  $('.candidate').unbind().attr('class', '')
+
   for tile in world.tiles
     world.randomlyPlaceTile(tile, world.findValidPositions(tile))
 
@@ -624,8 +626,21 @@ $('#go').click(->
   $('#right').unbind().attr('disabled', 'disabled')
 
   $('#go').unbind().attr('disabled', 'disabled')
-
-  $('.candidate').unbind().attr('class', '')
+  $('#step').unbind().attr('disabled', 'disabled')
 
   world.drawBoard()
-).attr('disabled', '')
+)
+
+$('#step').click(->
+  $('.candidate').unbind().attr('class', '')
+
+  tile = world.tiles.shift()
+  world.randomlyPlaceTile(tile, world.findValidPositions(tile))
+
+  world.drawBoard()
+  world.next()
+
+  if world.tiles.length is 0
+    $('#go').unbind().attr('disabled', 'disabled')
+    $('#step').unbind().attr('disabled', 'disabled')
+)

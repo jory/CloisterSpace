@@ -716,6 +716,7 @@
   });
   $('#go').click(function() {
     var tile, _i, _len, _ref;
+    $('.candidate').unbind().attr('class', '');
     _ref = world.tiles;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       tile = _ref[_i];
@@ -725,7 +726,19 @@
     $('#left').unbind().attr('disabled', 'disabled');
     $('#right').unbind().attr('disabled', 'disabled');
     $('#go').unbind().attr('disabled', 'disabled');
-    $('.candidate').unbind().attr('class', '');
+    $('#step').unbind().attr('disabled', 'disabled');
     return world.drawBoard();
-  }).attr('disabled', '');
+  });
+  $('#step').click(function() {
+    var tile;
+    $('.candidate').unbind().attr('class', '');
+    tile = world.tiles.shift();
+    world.randomlyPlaceTile(tile, world.findValidPositions(tile));
+    world.drawBoard();
+    world.next();
+    if (world.tiles.length === 0) {
+      $('#go').unbind().attr('disabled', 'disabled');
+      return $('#step').unbind().attr('disabled', 'disabled');
+    }
+  });
 }).call(this);
