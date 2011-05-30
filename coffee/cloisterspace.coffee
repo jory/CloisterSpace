@@ -367,8 +367,18 @@ class World
     candidates = [].concat candidates...
 
     if candidates.length > 0
-      i = Math.round(Math.random() * (candidates.length - 1))
-      [row, col, turns, neighbours] = candidates[i]
+      subcandidates = (new Array() for i in [0..3])
+
+      for candidate in candidates
+        subcandidates[candidate[3].length].push(candidate)
+
+      index = 0
+      for i in [0..3]
+        if subcandidates[i].length > 0
+          index = i
+
+      j = Math.round(Math.random() * (subcandidates[index].length - 1))
+      [row, col, turns, neighbours] = subcandidates[index][j]
 
       tile.rotate(turns) if turns > 0
 

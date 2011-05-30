@@ -414,11 +414,29 @@
       return sortedCandidates;
     };
     World.prototype.randomlyPlaceTile = function(tile, candidates) {
-      var col, i, neighbours, row, turns, _ref, _ref2;
+      var candidate, col, i, index, j, neighbours, row, subcandidates, turns, _i, _len, _ref, _ref2;
       candidates = (_ref = []).concat.apply(_ref, candidates);
       if (candidates.length > 0) {
-        i = Math.round(Math.random() * (candidates.length - 1));
-        _ref2 = candidates[i], row = _ref2[0], col = _ref2[1], turns = _ref2[2], neighbours = _ref2[3];
+        subcandidates = (function() {
+          var _results;
+          _results = [];
+          for (i = 0; i <= 3; i++) {
+            _results.push(new Array());
+          }
+          return _results;
+        })();
+        for (_i = 0, _len = candidates.length; _i < _len; _i++) {
+          candidate = candidates[_i];
+          subcandidates[candidate[3].length].push(candidate);
+        }
+        index = 0;
+        for (i = 0; i <= 3; i++) {
+          if (subcandidates[i].length > 0) {
+            index = i;
+          }
+        }
+        j = Math.round(Math.random() * (subcandidates[index].length - 1));
+        _ref2 = subcandidates[index][j], row = _ref2[0], col = _ref2[1], turns = _ref2[2], neighbours = _ref2[3];
         if (turns > 0) {
           tile.rotate(turns);
         }
