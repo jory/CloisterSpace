@@ -197,7 +197,7 @@
       };
       this.openEdges = [];
       this.openEdges.push(address + ("," + edge));
-      this.length = 1;
+      this.size = 1;
       this.numPennants = hasPennant ? 1 : 0;
       this.finished = false;
     }
@@ -206,7 +206,7 @@
       address = "" + row + "," + col;
       if (!this.tiles[address]) {
         this.tiles[address] = true;
-        this.length += 1;
+        this.size += 1;
         if (hasPennant) {
           this.numPennants += 1;
         }
@@ -249,7 +249,7 @@
       for (address in this.tiles) {
         out += "" + address + "; ";
       }
-      return out.slice(0, -2) + ("), length: " + this.length + ", finished: " + this.finished + ", numPennants: " + this.numPennants);
+      return out.slice(0, -2) + ("), size: " + this.size + ", finished: " + this.finished + ", numPennants: " + this.numPennants);
     };
     return City;
   })();
@@ -318,7 +318,7 @@
         'g': 'grass',
         'c': 'city'
       };
-      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221', 'city4q.png     1   reg   cccc    --  ----    1111    --------', 'road4.png      1   reg   rrrr    --  1234    ----    12233441', 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--', 'city3q.png     1   reg   ccgc    --  ----    11-1    ----11--', 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--', 'city3qr.png    2   reg   ccrc    --  --1-    11-1    ----12--', 'road3.png      4   reg   grrr    --  -123    ----    11122331', 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--', 'city2weq.png   2   reg   gcgc    --  ----    -1-1    11--22--', 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111', 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--', 'city2nwq.png   2   reg   cggc    --  ----    1--1    --1111--', 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--', 'city2nwqr.png  2   reg   crrc    --  -11-    1--1    --1221--', 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221', 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111', 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--', 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111', 'cloister.png   4   reg   gggg    --  ----    ----    11111111', 'city1.png      5   reg   cggg    --  ----    1---    --111111', 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111', 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221', 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'];
+      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1.png      5   reg   cggg    --  ----    1---    --111111', 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111', 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221', 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331', 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221', 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--', 'city2nwq.png   2   reg   cggc    --  ----    1--1    --1111--', 'city2nwqr.png  2   reg   crrc    --  -11-    1--1    --1221--', 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--', 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--', 'city2weq.png   2   reg   gcgc    --  ----    -1-1    11--22--', 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--', 'city3q.png     1   reg   ccgc    --  ----    11-1    ----11--', 'city3qr.png    2   reg   ccrc    --  --1-    11-1    ----12--', 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--', 'city4q.png     1   reg   cccc    --  ----    1111    --------', 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111', 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--', 'cloister.png   4   reg   gggg    --  ----    ----    11111111', 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111', 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111', 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221', 'road3.png      4   reg   grrr    --  -123    ----    11122331', 'road4.png      1   reg   rrrr    --  1234    ----    12233441'];
       tileSets = (function() {
         var _i, _len, _results;
         _results = [];
@@ -420,7 +420,7 @@
         subcandidates = (function() {
           var _results;
           _results = [];
-          for (i = 0; i <= 3; i++) {
+          for (i = 0; i <= 4; i++) {
             _results.push(new Array());
           }
           return _results;
@@ -430,7 +430,7 @@
           subcandidates[candidate[3].length].push(candidate);
         }
         index = 0;
-        for (i = 0; i <= 3; i++) {
+        for (i = 0; i <= 4; i++) {
           if (subcandidates[i].length > 0) {
             index = i;
           }
@@ -599,9 +599,11 @@
             for (_m = 0, _len5 = _ref8.length; _m < _len5; _m++) {
               city = _ref8[_m];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
-                cities[0].add(row, col, dir, edge.city, tile.hasPennant);
-                cities[0].merge(city);
-                this.cities.remove(city);
+                if (cities[0] !== city) {
+                  cities[0].merge(city);
+                  this.cities.remove(city);
+                }
+                city.add(row, col, dir, edge.city, tile.hasPennant);
                 added = true;
               }
             }
@@ -617,7 +619,7 @@
             }
           }
         } else if (edge.type === 'grass') {
-          console.log('grass');
+          null;
         }
         handled[dir] = true;
       }
@@ -654,7 +656,7 @@
                 return this.cities.push(new City(row, col, dir, edge.city, tile.hasPennant));
               }
             } else if (edge.type === 'grass') {
-              return console.log("Also grass");
+              return null;
             }
           }
         }).call(this));
@@ -736,6 +738,7 @@
     world.randomlyPlaceTile(tile, world.findValidPositions(tile));
     world.drawBoard();
     world.next();
+    print_features(true);
     if (world.tiles.length === 0) {
       $('#go').unbind().attr('disabled', 'disabled');
       return $('#step').unbind().attr('disabled', 'disabled');

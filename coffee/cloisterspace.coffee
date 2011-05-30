@@ -148,7 +148,7 @@ class City
     @openEdges = []
     @openEdges.push(address + ",#{edge}")
 
-    @length = 1
+    @size = 1
 
     @numPennants = if hasPennant then 1 else 0
 
@@ -159,7 +159,7 @@ class City
 
     if not @tiles[address]
       @tiles[address] = true
-      @length += 1
+      @size += 1
       if hasPennant
         @numPennants += 1
 
@@ -196,7 +196,7 @@ class City
     out = "City: ("
     for address of @tiles
       out += "#{address}; "
-    out.slice(0, -2) + "), length: #{@length}, finished: #{@finished}, numPennants: #{@numPennants}"
+    out.slice(0, -2) + "), size: #{@size}, finished: #{@finished}, numPennants: #{@numPennants}"
 
 
 class Cloister
@@ -266,30 +266,30 @@ class World
         ##########################################
         ##########################################
         'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
-        'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
-        'city4q.png     1   reg   cccc    --  ----    1111    --------',
-        'road4.png      1   reg   rrrr    --  1234    ----    12233441',
-        'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
-        'city3q.png     1   reg   ccgc    --  ----    11-1    ----11--',
-        'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
-        'city3qr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
-        'road3.png      4   reg   grrr    --  -123    ----    11122331',
-        'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
-        'city2weq.png   2   reg   gcgc    --  ----    -1-1    11--22--',
-        'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
-        'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
-        'city2nwq.png   2   reg   cggc    --  ----    1--1    --1111--',
-        'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
-        'city2nwqr.png  2   reg   crrc    --  -11-    1--1    --1221--',
-        'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
-        'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
-        'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
-        'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
-        'cloister.png   4   reg   gggg    --  ----    ----    11111111',
         'city1.png      5   reg   cggg    --  ----    1---    --111111',
         'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
         'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
         'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
+        'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
+        'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
+        'city2nwq.png   2   reg   cggc    --  ----    1--1    --1111--',
+        'city2nwqr.png  2   reg   crrc    --  -11-    1--1    --1221--',
+        'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
+        'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
+        'city2weq.png   2   reg   gcgc    --  ----    -1-1    11--22--',
+        'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
+        'city3q.png     1   reg   ccgc    --  ----    11-1    ----11--',
+        'city3qr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
+        'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
+        'city4q.png     1   reg   cccc    --  ----    1111    --------',
+        'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
+        'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
+        'cloister.png   4   reg   gggg    --  ----    ----    11111111',
+        'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
+        'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
+        'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
+        'road3.png      4   reg   grrr    --  -123    ----    11122331',
+        'road4.png      1   reg   rrrr    --  1234    ----    12233441',
       ]
 
     tileSets = for tileDef in tileDefinitions
@@ -367,13 +367,13 @@ class World
     candidates = [].concat candidates...
 
     if candidates.length > 0
-      subcandidates = (new Array() for i in [0..3])
+      subcandidates = (new Array() for i in [0..4])
 
       for candidate in candidates
         subcandidates[candidate[3].length].push(candidate)
 
       index = 0
-      for i in [0..3]
+      for i in [0..4]
         if subcandidates[i].length > 0
           index = i
 
@@ -530,9 +530,12 @@ class World
         if not tile.hasTwoCities and cities.length > 0
           for city in @cities
             if not added and city.has(otherRow, otherCol, otherEdge.city)
-              cities[0].add(row, col, dir, edge.city, tile.hasPennant)
-              cities[0].merge(city)
-              @cities.remove(city)
+
+              if cities[0] isnt city
+                cities[0].merge(city)
+                @cities.remove(city)
+
+              city.add(row, col, dir, edge.city, tile.hasPennant)
               added = true
         else
           for city in @cities
@@ -543,7 +546,7 @@ class World
 
       else if edge.type is 'grass'
         # TODO: Handle this
-        console.log('grass')
+        null
 
       handled[dir] = true
 
@@ -575,7 +578,7 @@ class World
 
         else if edge.type is 'grass'
           # TODO: Handle this
-          console.log("Also grass")
+          null
 
 
 world = new World()
@@ -639,6 +642,8 @@ $('#step').click(->
 
   world.drawBoard()
   world.next()
+
+  print_features(true)
 
   if world.tiles.length is 0
     $('#go').unbind().attr('disabled', 'disabled')
