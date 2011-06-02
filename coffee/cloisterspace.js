@@ -118,23 +118,13 @@
   })();
   Road = (function() {
     function Road(row, col, edge, id, hasEnd) {
-      var address;
-      address = "" + row + "," + col;
       this.tiles = {};
-      this.tiles[address] = true;
       this.ids = {};
-      this.ids[address + ("," + id)] = true;
       this.edges = {};
-      this.edges[address + ("," + edge)] = {
-        row: row,
-        col: col,
-        edge: edge,
-        id: id,
-        hasEnd: hasEnd
-      };
-      this.length = 1;
-      this.numEnds = hasEnd ? 1 : 0;
+      this.length = 0;
+      this.numEnds = 0;
       this.finished = false;
+      this.add(row, col, edge, id, hasEnd);
     }
     Road.prototype.add = function(row, col, edge, id, hasEnd) {
       var address;
@@ -183,24 +173,14 @@
   })();
   City = (function() {
     function City(row, col, edge, id, cityFields, hasPennant) {
-      var address;
-      address = "" + row + "," + col;
       this.tiles = {};
-      this.tiles[address] = cityFields;
       this.ids = {};
-      this.ids[address + ("," + id)] = true;
       this.edges = {};
-      this.edges[address + ("," + edge)] = {
-        row: row,
-        col: col,
-        edge: edge,
-        id: id
-      };
       this.openEdges = [];
-      this.openEdges.push(address + ("," + edge));
-      this.size = 1;
-      this.numPennants = hasPennant ? 1 : 0;
+      this.size = 0;
+      this.numPennants = 0;
       this.finished = false;
+      this.add(row, col, edge, id, cityFields, hasPennant);
     }
     City.prototype.add = function(row, col, edge, id, cityFields, hasPennant) {
       var address, otherAddress, otherCol, otherRow, _ref;
@@ -260,8 +240,9 @@
     function Cloister(row, col) {
       var colOffset, otherCol, otherRow, rowOffset, _ref, _ref2;
       this.tiles = {};
-      this.tiles[row + "," + col] = true;
       this.neighbours = {};
+      this.size = 0;
+      this.finished = false;
       for (rowOffset = _ref = -1; _ref <= 1 ? rowOffset <= 1 : rowOffset >= 1; _ref <= 1 ? rowOffset++ : rowOffset--) {
         for (colOffset = _ref2 = -1; _ref2 <= 1 ? colOffset <= 1 : colOffset >= 1; _ref2 <= 1 ? colOffset++ : colOffset--) {
           if (!(rowOffset === 0 && colOffset === 0)) {
@@ -274,8 +255,7 @@
           }
         }
       }
-      this.size = 1;
-      this.finished = false;
+      this.add(row, col);
     }
     Cloister.prototype.add = function(row, col) {
       this.tiles[row + "," + col] = true;
@@ -296,21 +276,12 @@
   })();
   Farm = (function() {
     function Farm(row, col, edge, id) {
-      var address;
-      address = "" + row + "," + col;
       this.tiles = {};
-      this.tiles[address] = id;
       this.ids = {};
-      this.ids[address + ("," + id)] = true;
       this.edges = {};
-      this.edges[address + ("," + edge)] = {
-        row: row,
-        col: col,
-        edge: edge,
-        id: id
-      };
-      this.size = 1;
+      this.size = 0;
       this.score = 0;
+      this.add(row, col, edge, id);
     }
     Farm.prototype.add = function(row, col, edge, id) {
       var address;
@@ -342,6 +313,9 @@
     };
     Farm.prototype.calculateScore = function(cities) {
       var added, city, fields, tile, _i, _len, _results;
+      if (this.score > 0) {
+        throw "Score already calculated";
+      }
       _results = [];
       for (_i = 0, _len = cities.length; _i < _len; _i++) {
         city = cities[_i];
@@ -353,7 +327,7 @@
             _results2 = [];
             for (tile in _ref) {
               fields = _ref[tile];
-              _results2.push(!added && (_ref2 = this.tiles[tile], __indexOf.call(fields, _ref2) >= 0) ? (added = true, this.score += 1) : void 0);
+              _results2.push(!added && (_ref2 = this.tiles[tile], __indexOf.call(fields, _ref2) >= 0) ? (added = true, this.score += 3) : void 0);
             }
             return _results2;
           }
@@ -863,7 +837,7 @@
     _results = [];
     for (_l = 0, _len4 = _ref4.length; _l < _len4; _l++) {
       farm = _ref4[_l];
-      _results.push(all ? console.log(farm.toString()) : void 0);
+      _results.push(console.log(farm.toString()));
     }
     return _results;
   };

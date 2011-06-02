@@ -24,6 +24,7 @@ offset = (edge, row, col) ->
   offsets = adjacents[edge]
   [row + offsets.row, col + offsets.col]
 
+
 class Edge
   constructor: (@type, @road, @city, @grassA, @grassB) ->
     @string = "type: #{@type}, road: #{@road}, city: #{@city}, grassA: #{@grassA}, grassB: #{@grassB}"
@@ -71,27 +72,14 @@ class Tile
 
 class Road
   constructor: (row, col, edge, id, hasEnd) ->
-    address = "#{row},#{col}"
-
     @tiles = {}
-    @tiles[address] = true
-
     @ids = {}
-    @ids[address + ",#{id}"] = true
-
     @edges = {}
-    @edges[address + ",#{edge}"] =
-      row: row
-      col: col
-      edge: edge
-      id: id
-      hasEnd: hasEnd
-
-    @length = 1
-
-    @numEnds = if hasEnd then 1 else 0
-
+    @length = 0
+    @numEnds = 0
     @finished = false
+
+    @add(row, col, edge, id, hasEnd)
 
   add: (row, col, edge, id, hasEnd) ->
     address = "#{row},#{col}"
@@ -130,29 +118,15 @@ class Road
 
 class City
   constructor: (row, col, edge, id, cityFields, hasPennant) ->
-    address = "#{row},#{col}"
-
     @tiles = {}
-    @tiles[address] = cityFields
-
     @ids = {}
-    @ids[address + ",#{id}"] = true
-
     @edges = {}
-    @edges[address + ",#{edge}"] =
-      row: row
-      col: col
-      edge: edge
-      id: id
-
     @openEdges = []
-    @openEdges.push(address + ",#{edge}")
-
-    @size = 1
-
-    @numPennants = if hasPennant then 1 else 0
-
+    @size = 0
+    @numPennants = 0
     @finished = false
+
+    @add(row, col, edge, id, cityFields, hasPennant)
 
   add: (row, col, edge, id, cityFields, hasPennant) ->
     address = "#{row},#{col}"
@@ -204,9 +178,10 @@ class City
 class Cloister
   constructor: (row, col) ->
     @tiles = {}
-    @tiles[row + "," + col] = true
-
     @neighbours = {}
+    @size = 0
+    @finished = false
+
     for rowOffset in [-1..1]
       for colOffset in [-1..1]
         if not (rowOffset is 0 and colOffset is 0)
@@ -216,9 +191,7 @@ class Cloister
             row: otherRow
             col: otherCol
 
-    @size = 1
-
-    @finished = false
+    @add(row, col)
 
   add: (row, col) ->
     @tiles[row + "," + col] = true
@@ -236,23 +209,13 @@ class Cloister
 
 class Farm
   constructor: (row, col, edge, id) ->
-    address = "#{row},#{col}"
-
     @tiles = {}
-    @tiles[address] = id
-
     @ids = {}
-    @ids[address + ",#{id}"] = true
-
     @edges = {}
-    @edges[address + ",#{edge}"] =
-      row: row
-      col: col
-      edge: edge
-      id: id
-
-    @size = 1
+    @size = 0
     @score = 0
+
+    @add(row, col, edge, id)
 
   add: (row, col, edge, id) ->
     address = "#{row},#{col}"
@@ -277,13 +240,16 @@ class Farm
       @add(edge.row, edge.col, edge.edge, edge.id)
 
   calculateScore: (cities) ->
+    if @score > 0
+      throw "Score already calculated"
+
     for city in cities
       if city.finished
         added = false
         for tile, fields of city.tiles
           if not added and @tiles[tile] in fields
             added = true
-            @score += 1
+            @score += 3
 
   toString: ->
     out = "Farm: ("
@@ -731,8 +697,7 @@ print_features = (all) ->
       console.log(road.toString())
 
   for farm in world.farms
-    if all
-      console.log(farm.toString())
+    console.log(farm.toString())
 
 
 $('#features_all').click(->
