@@ -232,6 +232,55 @@ class Cloister
     out.slice(0, -2) + "), size: #{@size}, finished: #{@finished}"
 
 
+class Farm
+  constructor: (row, col, edge, id) ->
+    address = "#{row},#{col}"
+
+    @tiles = {}
+    @tiles[address] = true
+
+    @ids = {}
+    @ids[address + ",#{id}"] = true
+
+    @edges = {}
+    @edges[address + ",#{edge}"] =
+      row: row
+      col: col
+      edge: edge
+      id: id
+
+    @size = 1
+    @score = 0
+
+  add: (row, col, edge, id) ->
+    address = "#{row},#{col}"
+
+    if not @tiles[address]
+      @tiles[address] = true
+      @size += 1
+
+    @ids[address + ",#{id}"] = true
+
+    @edges[address + ",#{edge}"] =
+      row: row
+      col: col
+      edge: edge
+      id: id
+
+  has: (row, col, id) ->
+    @ids["#{row},#{col},#{id}"]
+
+  merge: (other) ->
+    for e, edge of other.edges
+      @add(edge.row, edge.col, edge.edge, edge.id)
+
+  toString: ->
+    out = "Farm: ("
+    for address of @tiles
+      out += "#{address}; "
+    out.slice(0, -2) + "), size: #{@size}, score: #{@score}"
+
+
 class World
   constructor: ->
     @tiles = @generateRandomTileSet()
@@ -496,15 +545,60 @@ class World
       east:  false
       west:  false
 
+    farms = []
     roads = []
     cities = []
 
     for dir in neighbours
-      [otherRow, otherCol] = offset(dir, row, col)
-      neighbour = @board[otherRow][otherCol]
-
       edge = tile.edges[dir]
-      otherEdge = neighbour.edges[oppositeDirection[dir]]
+
+      [otherRow, otherCol] = offset(dir, row, col)
+      otherTile = @board[otherRow][otherCol]
+      otherEdge = otherTile.edges[oppositeDirection[dir]]
+
+      # Add to the existings farms, if applicable.
+
+      added = false
+
+      if edge.grassA isnt '-'
+        for farm in @farms
+          if not added and farm.has(otherRow, otherCol, otherEdge.grassB)
+
+            if farms.length > 0
+              for otherFarm in farms
+                if not added and otherFarm.has(row, col, edge.grassA)
+                  if otherFarm isnt farm
+                    otherFarm.add(row, col, dir, edge.grassA)
+                    otherFarm.merge(farm)
+                    @farms.remove(farm)
+                    added = true
+
+            if not added
+              farm.add(row, col, dir, edge.grassA)
+              farms.push(farm)
+              added = true
+
+      added = false
+
+      if edge.grassB isnt '-'
+        for farm in @farms
+          if not added and farm.has(otherRow, otherCol, otherEdge.grassA)
+
+            if farms.length > 0
+              for otherFarm in farms
+                if not added and otherFarm.has(row, col, edge.grassB)
+                  if otherFarm isnt farm
+                    otherFarm.add(row, col, dir, edge.grassB)
+                    otherFarm.merge(farm)
+                    @farms.remove(farm)
+                    added = true
+
+            if not added
+              farm.add(row, col, dir, edge.grassB)
+              farms.push(farm)
+              added = true
+
+      # Add to whatever other existing feature is on the edge.
 
       added = false
 
@@ -549,10 +643,6 @@ class World
               cities.push(city)
               added = true
 
-      else if edge.type is 'grass'
-        # TODO: Handle this
-        null
-
       handled[dir] = true
 
     for dir, seen of handled
@@ -561,6 +651,29 @@ class World
 
         # either attach my features to existing ones on the current tile,
         # or create new features.
+
+        added = false
+
+        if edge.grassA isnt '-'
+          for farm in @farms
+            if not added and farm.has(row, col, edge.grassA)
+              farm.add(row, col, dir, edge.grassA)
+              added = true
+
+          if not added
+            @farms.push(new Farm(row, col, dir, edge.grassA))
+
+        added = false
+
+        if edge.grassB isnt '-'
+          for farm in @farms
+            if not added and farm.has(row, col, edge.grassB)
+              farm.add(row, col, dir, edge.grassB)
+              added = true
+
+          if not added
+            @farms.push(new Farm(row, col, dir, edge.grassB))
+
         added = false
 
         if edge.type is 'road'
@@ -580,10 +693,6 @@ class World
 
           if not added
             @cities.push(new City(row, col, dir, edge.city, tile.hasPennant))
-
-        else if edge.type is 'grass'
-          # TODO: Handle this
-          null
 
 
 world = new World()
@@ -619,6 +728,8 @@ $('#features_completed').click(->
 )
 
 $('#features_farms').click(->
+  console.log('------------------------------------------')
+
   for farm in world.farms
     console.log(farm.toString())
 )

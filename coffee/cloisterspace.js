@@ -1,5 +1,5 @@
 (function() {
-  var City, Cloister, Edge, Road, Tile, World, adjacents, offset, oppositeDirection, print_features, world;
+  var City, Cloister, Edge, Farm, Road, Tile, World, adjacents, offset, oppositeDirection, print_features, world;
   var __indexOf = Array.prototype.indexOf || function(item) {
     for (var i = 0, l = this.length; i < l; i++) {
       if (this[i] === item) return i;
@@ -291,6 +291,62 @@
     };
     return Cloister;
   })();
+  Farm = (function() {
+    function Farm(row, col, edge, id) {
+      var address;
+      address = "" + row + "," + col;
+      this.tiles = {};
+      this.tiles[address] = true;
+      this.ids = {};
+      this.ids[address + ("," + id)] = true;
+      this.edges = {};
+      this.edges[address + ("," + edge)] = {
+        row: row,
+        col: col,
+        edge: edge,
+        id: id
+      };
+      this.size = 1;
+      this.score = 0;
+    }
+    Farm.prototype.add = function(row, col, edge, id) {
+      var address;
+      address = "" + row + "," + col;
+      if (!this.tiles[address]) {
+        this.tiles[address] = true;
+        this.size += 1;
+      }
+      this.ids[address + ("," + id)] = true;
+      return this.edges[address + ("," + edge)] = {
+        row: row,
+        col: col,
+        edge: edge,
+        id: id
+      };
+    };
+    Farm.prototype.has = function(row, col, id) {
+      return this.ids["" + row + "," + col + "," + id];
+    };
+    Farm.prototype.merge = function(other) {
+      var e, edge, _ref, _results;
+      _ref = other.edges;
+      _results = [];
+      for (e in _ref) {
+        edge = _ref[e];
+        _results.push(this.add(edge.row, edge.col, edge.edge, edge.id));
+      }
+      return _results;
+    };
+    Farm.prototype.toString = function() {
+      var address, out;
+      out = "Farm: (";
+      for (address in this.tiles) {
+        out += "" + address + "; ";
+      }
+      return out.slice(0, -2) + ("), size: " + this.size + ", score: " + this.score);
+    };
+    return Farm;
+  })();
   World = (function() {
     function World() {
       var i;
@@ -522,7 +578,7 @@
       }
     };
     World.prototype.placeTile = function(row, col, tile, neighbours) {
-      var added, cities, city, cloister, dir, edge, handled, n, neighbour, otherCol, otherEdge, otherRow, road, roads, seen, _i, _j, _k, _l, _len, _len2, _len3, _len4, _len5, _len6, _m, _n, _ref, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9, _results;
+      var added, cities, city, cloister, dir, edge, farm, farms, handled, n, neighbour, otherCol, otherEdge, otherFarm, otherRow, otherTile, road, roads, seen, _i, _j, _k, _l, _len, _len10, _len2, _len3, _len4, _len5, _len6, _len7, _len8, _len9, _m, _n, _o, _p, _q, _r, _ref, _ref10, _ref11, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7, _ref8, _ref9, _results;
       if (neighbours.length === 0 && !tile.isStart) {
         throw "Invalid tile placement";
       }
@@ -557,20 +613,75 @@
         east: false,
         west: false
       };
+      farms = [];
       roads = [];
       cities = [];
       for (_j = 0, _len2 = neighbours.length; _j < _len2; _j++) {
         dir = neighbours[_j];
-        _ref5 = offset(dir, row, col), otherRow = _ref5[0], otherCol = _ref5[1];
-        neighbour = this.board[otherRow][otherCol];
         edge = tile.edges[dir];
-        otherEdge = neighbour.edges[oppositeDirection[dir]];
+        _ref5 = offset(dir, row, col), otherRow = _ref5[0], otherCol = _ref5[1];
+        otherTile = this.board[otherRow][otherCol];
+        otherEdge = otherTile.edges[oppositeDirection[dir]];
+        added = false;
+        if (edge.grassA !== '-') {
+          _ref6 = this.farms;
+          for (_k = 0, _len3 = _ref6.length; _k < _len3; _k++) {
+            farm = _ref6[_k];
+            if (!added && farm.has(otherRow, otherCol, otherEdge.grassB)) {
+              if (farms.length > 0) {
+                for (_l = 0, _len4 = farms.length; _l < _len4; _l++) {
+                  otherFarm = farms[_l];
+                  if (!added && otherFarm.has(row, col, edge.grassA)) {
+                    if (otherFarm !== farm) {
+                      otherFarm.add(row, col, dir, edge.grassA);
+                      otherFarm.merge(farm);
+                      this.farms.remove(farm);
+                      added = true;
+                    }
+                  }
+                }
+              }
+              if (!added) {
+                farm.add(row, col, dir, edge.grassA);
+                farms.push(farm);
+                added = true;
+              }
+            }
+          }
+        }
+        added = false;
+        if (edge.grassB !== '-') {
+          _ref7 = this.farms;
+          for (_m = 0, _len5 = _ref7.length; _m < _len5; _m++) {
+            farm = _ref7[_m];
+            if (!added && farm.has(otherRow, otherCol, otherEdge.grassA)) {
+              if (farms.length > 0) {
+                for (_n = 0, _len6 = farms.length; _n < _len6; _n++) {
+                  otherFarm = farms[_n];
+                  if (!added && otherFarm.has(row, col, edge.grassB)) {
+                    if (otherFarm !== farm) {
+                      otherFarm.add(row, col, dir, edge.grassB);
+                      otherFarm.merge(farm);
+                      this.farms.remove(farm);
+                      added = true;
+                    }
+                  }
+                }
+              }
+              if (!added) {
+                farm.add(row, col, dir, edge.grassB);
+                farms.push(farm);
+                added = true;
+              }
+            }
+          }
+        }
         added = false;
         if (edge.type === 'road') {
           if (!tile.hasRoadEnd && roads.length > 0) {
-            _ref6 = this.roads;
-            for (_k = 0, _len3 = _ref6.length; _k < _len3; _k++) {
-              road = _ref6[_k];
+            _ref8 = this.roads;
+            for (_o = 0, _len7 = _ref8.length; _o < _len7; _o++) {
+              road = _ref8[_o];
               if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
                 if (roads[0] === road) {
                   road.finished = true;
@@ -583,9 +694,9 @@
               }
             }
           } else {
-            _ref7 = this.roads;
-            for (_l = 0, _len4 = _ref7.length; _l < _len4; _l++) {
-              road = _ref7[_l];
+            _ref9 = this.roads;
+            for (_p = 0, _len8 = _ref9.length; _p < _len8; _p++) {
+              road = _ref9[_p];
               if (!added && road.has(otherRow, otherCol, otherEdge.road)) {
                 road.add(row, col, dir, edge.road, tile.hasRoadEnd);
                 roads.push(road);
@@ -595,9 +706,9 @@
           }
         } else if (edge.type === 'city') {
           if (!tile.hasTwoCities && cities.length > 0) {
-            _ref8 = this.cities;
-            for (_m = 0, _len5 = _ref8.length; _m < _len5; _m++) {
-              city = _ref8[_m];
+            _ref10 = this.cities;
+            for (_q = 0, _len9 = _ref10.length; _q < _len9; _q++) {
+              city = _ref10[_q];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
                 if (cities[0] !== city) {
                   cities[0].merge(city);
@@ -608,9 +719,9 @@
               }
             }
           } else {
-            _ref9 = this.cities;
-            for (_n = 0, _len6 = _ref9.length; _n < _len6; _n++) {
-              city = _ref9[_n];
+            _ref11 = this.cities;
+            for (_r = 0, _len10 = _ref11.length; _r < _len10; _r++) {
+              city = _ref11[_r];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
                 city.add(row, col, dir, edge.city, tile.hasPennant);
                 cities.push(city);
@@ -618,8 +729,6 @@
               }
             }
           }
-        } else if (edge.type === 'grass') {
-          null;
         }
         handled[dir] = true;
       }
@@ -627,14 +736,42 @@
       for (dir in handled) {
         seen = handled[dir];
         _results.push((function() {
-          var _len7, _len8, _o, _p, _ref10, _ref11;
+          var _len11, _len12, _len13, _len14, _ref12, _ref13, _ref14, _ref15, _s, _t, _u, _v;
           if (!seen) {
             edge = tile.edges[dir];
             added = false;
+            if (edge.grassA !== '-') {
+              _ref12 = this.farms;
+              for (_s = 0, _len11 = _ref12.length; _s < _len11; _s++) {
+                farm = _ref12[_s];
+                if (!added && farm.has(row, col, edge.grassA)) {
+                  farm.add(row, col, dir, edge.grassA);
+                  added = true;
+                }
+              }
+              if (!added) {
+                this.farms.push(new Farm(row, col, dir, edge.grassA));
+              }
+            }
+            added = false;
+            if (edge.grassB !== '-') {
+              _ref13 = this.farms;
+              for (_t = 0, _len12 = _ref13.length; _t < _len12; _t++) {
+                farm = _ref13[_t];
+                if (!added && farm.has(row, col, edge.grassB)) {
+                  farm.add(row, col, dir, edge.grassB);
+                  added = true;
+                }
+              }
+              if (!added) {
+                this.farms.push(new Farm(row, col, dir, edge.grassB));
+              }
+            }
+            added = false;
             if (edge.type === 'road') {
-              _ref10 = this.roads;
-              for (_o = 0, _len7 = _ref10.length; _o < _len7; _o++) {
-                road = _ref10[_o];
+              _ref14 = this.roads;
+              for (_u = 0, _len13 = _ref14.length; _u < _len13; _u++) {
+                road = _ref14[_u];
                 if (!added && road.has(row, col, edge.road)) {
                   road.add(row, col, dir, edge.road, tile.hasRoadEnd);
                   added = true;
@@ -644,9 +781,9 @@
                 return this.roads.push(new Road(row, col, dir, edge.road, tile.hasRoadEnd));
               }
             } else if (edge.type === 'city') {
-              _ref11 = this.cities;
-              for (_p = 0, _len8 = _ref11.length; _p < _len8; _p++) {
-                city = _ref11[_p];
+              _ref15 = this.cities;
+              for (_v = 0, _len14 = _ref15.length; _v < _len14; _v++) {
+                city = _ref15[_v];
                 if (!added && city.has(row, col, edge.city)) {
                   city.add(row, col, dir, edge.city, tile.hasPennant);
                   added = true;
@@ -655,8 +792,6 @@
               if (!added) {
                 return this.cities.push(new City(row, col, dir, edge.city, tile.hasPennant));
               }
-            } else if (edge.type === 'grass') {
-              return null;
             }
           }
         }).call(this));
@@ -708,6 +843,7 @@
   });
   $('#features_farms').click(function() {
     var farm, _i, _len, _ref, _results;
+    console.log('------------------------------------------');
     _ref = world.farms;
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
