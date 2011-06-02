@@ -30,7 +30,7 @@ class Edge
 
 
 class Tile
-  constructor: (@image, north, east, south, west, @hasTwoCities, @hasRoadEnd, @hasPennant, @isCloister, @isStart) ->
+  constructor: (@image, north, east, south, west, @hasTwoCities, @hasRoadEnd, @hasPennant, @cityFields, @isCloister, @isStart) ->
     @edges =
       north: north
       east:  east
@@ -129,11 +129,11 @@ class Road
 
 
 class City
-  constructor: (row, col, edge, id, hasPennant) ->
+  constructor: (row, col, edge, id, cityFields, hasPennant) ->
     address = "#{row},#{col}"
 
     @tiles = {}
-    @tiles[address] = true
+    @tiles[address] = cityFields
 
     @ids = {}
     @ids[address + ",#{id}"] = true
@@ -154,11 +154,11 @@ class City
 
     @finished = false
 
-  add: (row, col, edge, id, hasPennant) ->
+  add: (row, col, edge, id, cityFields, hasPennant) ->
     address = "#{row},#{col}"
 
-    if not @tiles[address]
-      @tiles[address] = true
+    if not @tiles[address]?
+      @tiles[address] = cityFields
       @size += 1
       if hasPennant
         @numPennants += 1
@@ -189,7 +189,9 @@ class City
 
   merge: (other) ->
     for e, edge of other.edges
-      @add(edge.row, edge.col, edge.edge, edge.id, false)
+      row = edge.row
+      col = edge.col
+      @add(row, col, edge.edge, edge.id, other.tiles["#{row},#{col}"], false)
     @numPennants += other.numPennants
 
   toString: ->
@@ -237,7 +239,7 @@ class Farm
     address = "#{row},#{col}"
 
     @tiles = {}
-    @tiles[address] = true
+    @tiles[address] = id
 
     @ids = {}
     @ids[address + ",#{id}"] = true
@@ -256,7 +258,7 @@ class Farm
     address = "#{row},#{col}"
 
     if not @tiles[address]
-      @tiles[address] = true
+      @tiles[address] = id
       @size += 1
 
     @ids[address + ",#{id}"] = true
@@ -273,6 +275,15 @@ class Farm
   merge: (other) ->
     for e, edge of other.edges
       @add(edge.row, edge.col, edge.edge, edge.id)
+
+  calculateScore: (cities) ->
+    for city in cities
+      if city.finished
+        added = false
+        for tile, fields of city.tiles
+          if not added and @tiles[tile] in fields
+            added = true
+            @score += 1
 
   toString: ->
     out = "Farm: ("
@@ -314,31 +325,31 @@ class World
         # FOOFOOFOO
         ##########################################
         ##########################################
-        'city1rwe.png   1   start crgr    --  -1-1    1---    --122221',
-        'city1.png      5   reg   cggg    --  ----    1---    --111111',
-        'city1rse.png   3   reg   crrg    --  -11-    1---    --122111',
-        'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221',
-        'city1rswe.png  3   reg   crrr    --  -123    1---    --122331'
-        'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221',
-        'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--',
-        'city2nwq.png   2   reg   cggc    --  ----    1--1    --1111--',
-        'city2nwqr.png  2   reg   crrc    --  -11-    1--1    --1221--',
-        'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--',
-        'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--',
-        'city2weq.png   2   reg   gcgc    --  ----    -1-1    11--22--',
-        'city3.png      3   reg   ccgc    --  ----    11-1    ----11--',
-        'city3q.png     1   reg   ccgc    --  ----    11-1    ----11--',
-        'city3qr.png    2   reg   ccrc    --  --1-    11-1    ----12--',
-        'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--',
-        'city4q.png     1   reg   cccc    --  ----    1111    --------',
-        'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111',
-        'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--',
-        'cloister.png   4   reg   gggg    --  ----    ----    11111111',
-        'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111',
-        'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111',
-        'road2sw.png    9   reg   ggrr    --  --11    ----    11111221',
-        'road3.png      4   reg   grrr    --  -123    ----    11122331',
-        'road4.png      1   reg   rrrr    --  1234    ----    12233441',
+        'city1rwe.png   1   start crgr    -1-1    1---    --122221    --    1',
+        'city1.png      5   reg   cggg    ----    1---    --111111    --    1',
+        'city1rse.png   3   reg   crrg    -11-    1---    --122111    --    1',
+        'city1rsw.png   3   reg   cgrr    --11    1---    --111221    --    1',
+        'city1rswe.png  3   reg   crrr    -123    1---    --122331    --    1',
+        'city1rwe.png   3   reg   crgr    -1-1    1---    --122221    --    1',
+        'city2nw.png    3   reg   cggc    ----    1--1    --1111--    --    1',
+        'city2nwq.png   2   reg   cggc    ----    1--1    --1111--    --    1',
+        'city2nwqr.png  2   reg   crrc    -11-    1--1    --1221--    --    1',
+        'city2nwr.png   3   reg   crrc    -11-    1--1    --1221--    --    1',
+        'city2we.png    1   reg   gcgc    ----    -1-1    11--22--    --   12',
+        'city2weq.png   2   reg   gcgc    ----    -1-1    11--22--    --   12',
+        'city3.png      3   reg   ccgc    ----    11-1    ----11--    --    1',
+        'city3q.png     1   reg   ccgc    ----    11-1    ----11--    --    1',
+        'city3qr.png    2   reg   ccrc    --1-    11-1    ----12--    --   12',
+        'city3r.png     1   reg   ccrc    --1-    11-1    ----12--    --   12',
+        'city4q.png     1   reg   cccc    ----    1111    --------    --    -',
+        'city11ne.png   2   reg   ccgg    ----    12--    ----1111    11    1',
+        'city11we.png   3   reg   gcgc    ----    -1-2    11--11--    11    1',
+        'cloister.png   4   reg   gggg    ----    ----    11111111    --    -',
+        'cloisterr.png  2   reg   ggrg    --1-    ----    11111111    --    -',
+        'road2ns.png    8   reg   rgrg    1-1-    ----    12222111    --    -',
+        'road2sw.png    9   reg   ggrr    --11    ----    11111221    --    -',
+        'road3.png      4   reg   grrr    -123    ----    11122331    --    -',
+        'road4.png      1   reg   rrrr    1234    ----    12233441    --    -',
       ]
 
     tileSets = for tileDef in tileDefinitions
@@ -349,16 +360,17 @@ class World
 
       image = tile[0]
       isStart = tile[2] is 'start'
-      hasTwoCities = tile[4] is '11'
+      hasTwoCities = tile[7] is '11'
       hasPennant = 'q' in image
+      cityFields = tile[8].split('')
 
       # The line: 'cloister' in image, fails for some reason.
       isCloister = image.indexOf("cloister") >= 0
 
       edges = tile[3].split('')
-      road  = tile[5].split('')
-      city  = tile[6].split('')
-      grass = tile[7].split('')
+      road  = tile[4].split('')
+      city  = tile[5].split('')
+      grass = tile[6].split('')
 
       roadEdgeCount = (edge for edge in edges when edge is 'r').length
       hasRoadEnd = (roadEdgeCount is 1 or roadEdgeCount is 3 or roadEdgeCount is 4)
@@ -370,7 +382,7 @@ class World
 
       for i in [1..count]
         new Tile(image, north, east, south, west,
-                 hasTwoCities, hasRoadEnd, hasPennant, isCloister, isStart)
+                 hasTwoCities, hasRoadEnd, hasPennant, cityFields, isCloister, isStart)
 
     tiles = [].concat tileSets...
 
@@ -439,7 +451,7 @@ class World
     tbody = table.find("tbody")
 
     for row in [@minrow - 1..@maxrow + 1]
-      tr = $("<tr></tr>")
+      tr = $("<tr row='#{row}'></tr>")
       for col in [@mincol - 1..@maxcol + 1]
         if 0 <= row < @maxSize and 0 <= col < @maxSize
           td = $("<td row='#{row}' col='#{col}'></td>")
@@ -498,6 +510,9 @@ class World
       $('#candidate').attr('style', 'visibility: hidden')
       $('#left').unbind().attr('disabled', 'disabled')
       $('#right').unbind().attr('disabled', 'disabled')
+
+      for farm in @farms
+        farm.calculateScore(@cities)
 
   placeTile: (row, col, tile, neighbours) ->
     if neighbours.length is 0 and not tile.isStart
@@ -627,19 +642,20 @@ class World
           for city in @cities
             if not added and city.has(otherRow, otherCol, otherEdge.city)
 
+              city.add(row, col, dir, edge.city, tile.cityFields, tile.hasPennant)
+              added = true
+
               if cities[0] isnt city
                 cities[0].merge(city)
                 @cities.remove(city)
 
-              city.add(row, col, dir, edge.city, tile.hasPennant)
-              added = true
         else
           # If you are adding a tile with two cities, or you do not
           # yet have a merge candidate, you do not need to perform a
           # merge.
           for city in @cities
             if not added and city.has(otherRow, otherCol, otherEdge.city)
-              city.add(row, col, dir, edge.city, tile.hasPennant)
+              city.add(row, col, dir, edge.city, tile.cityFields, tile.hasPennant)
               cities.push(city)
               added = true
 
@@ -688,11 +704,11 @@ class World
         else if edge.type is 'city'
           for city in @cities
             if not added and city.has(row, col, edge.city)
-              city.add(row, col, dir, edge.city, tile.hasPennant)
+              city.add(row, col, dir, edge.city, tile.cityFields, tile.hasPennant)
               added = true
 
           if not added
-            @cities.push(new City(row, col, dir, edge.city, tile.hasPennant))
+            @cities.push(new City(row, col, dir, edge.city, tile.cityFields, tile.hasPennant))
 
 
 world = new World()
@@ -746,6 +762,9 @@ $('#go').click(->
 
   $('#go').unbind().attr('disabled', 'disabled')
   $('#step').unbind().attr('disabled', 'disabled')
+
+  for farm in world.farms
+    farm.calculateScore(world.cities)
 
   world.drawBoard()
 )

@@ -53,11 +53,12 @@
     return Edge;
   })();
   Tile = (function() {
-    function Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isCloister, isStart) {
+    function Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, cityFields, isCloister, isStart) {
       this.image = image;
       this.hasTwoCities = hasTwoCities;
       this.hasRoadEnd = hasRoadEnd;
       this.hasPennant = hasPennant;
+      this.cityFields = cityFields;
       this.isCloister = isCloister;
       this.isStart = isStart;
       this.edges = {
@@ -181,11 +182,11 @@
     return Road;
   })();
   City = (function() {
-    function City(row, col, edge, id, hasPennant) {
+    function City(row, col, edge, id, cityFields, hasPennant) {
       var address;
       address = "" + row + "," + col;
       this.tiles = {};
-      this.tiles[address] = true;
+      this.tiles[address] = cityFields;
       this.ids = {};
       this.ids[address + ("," + id)] = true;
       this.edges = {};
@@ -201,11 +202,11 @@
       this.numPennants = hasPennant ? 1 : 0;
       this.finished = false;
     }
-    City.prototype.add = function(row, col, edge, id, hasPennant) {
+    City.prototype.add = function(row, col, edge, id, cityFields, hasPennant) {
       var address, otherAddress, otherCol, otherRow, _ref;
       address = "" + row + "," + col;
-      if (!this.tiles[address]) {
-        this.tiles[address] = true;
+      if (!(this.tiles[address] != null)) {
+        this.tiles[address] = cityFields;
         this.size += 1;
         if (hasPennant) {
           this.numPennants += 1;
@@ -235,11 +236,13 @@
       return this.ids["" + row + "," + col + "," + id];
     };
     City.prototype.merge = function(other) {
-      var e, edge, _ref;
+      var col, e, edge, row, _ref;
       _ref = other.edges;
       for (e in _ref) {
         edge = _ref[e];
-        this.add(edge.row, edge.col, edge.edge, edge.id, false);
+        row = edge.row;
+        col = edge.col;
+        this.add(row, col, edge.edge, edge.id, other.tiles["" + row + "," + col], false);
       }
       return this.numPennants += other.numPennants;
     };
@@ -296,7 +299,7 @@
       var address;
       address = "" + row + "," + col;
       this.tiles = {};
-      this.tiles[address] = true;
+      this.tiles[address] = id;
       this.ids = {};
       this.ids[address + ("," + id)] = true;
       this.edges = {};
@@ -313,7 +316,7 @@
       var address;
       address = "" + row + "," + col;
       if (!this.tiles[address]) {
-        this.tiles[address] = true;
+        this.tiles[address] = id;
         this.size += 1;
       }
       this.ids[address + ("," + id)] = true;
@@ -334,6 +337,27 @@
       for (e in _ref) {
         edge = _ref[e];
         _results.push(this.add(edge.row, edge.col, edge.edge, edge.id));
+      }
+      return _results;
+    };
+    Farm.prototype.calculateScore = function(cities) {
+      var added, city, fields, tile, _i, _len, _results;
+      _results = [];
+      for (_i = 0, _len = cities.length; _i < _len; _i++) {
+        city = cities[_i];
+        _results.push((function() {
+          var _ref, _ref2, _results2;
+          if (city.finished) {
+            added = false;
+            _ref = city.tiles;
+            _results2 = [];
+            for (tile in _ref) {
+              fields = _ref[tile];
+              _results2.push(!added && (_ref2 = this.tiles[tile], __indexOf.call(fields, _ref2) >= 0) ? (added = true, this.score += 1) : void 0);
+            }
+            return _results2;
+          }
+        }).call(this));
       }
       return _results;
     };
@@ -368,13 +392,13 @@
       this.placeTile(this.center, this.center, this.tiles.shift(), []);
     }
     World.prototype.generateRandomTileSet = function() {
-      var city, count, east, edge, edgeDefs, edges, grass, hasPennant, hasRoadEnd, hasTwoCities, i, image, isCloister, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
+      var city, cityFields, count, east, edge, edgeDefs, edges, grass, hasPennant, hasRoadEnd, hasTwoCities, i, image, isCloister, isStart, north, regExp, road, roadEdgeCount, south, tile, tileDef, tileDefinitions, tileSets, tiles, west, _ref;
       edgeDefs = {
         'r': 'road',
         'g': 'grass',
         'c': 'city'
       };
-      tileDefinitions = ['city1rwe.png   1   start crgr    --  -1-1    1---    --122221', 'city1.png      5   reg   cggg    --  ----    1---    --111111', 'city1rse.png   3   reg   crrg    --  -11-    1---    --122111', 'city1rsw.png   3   reg   cgrr    --  --11    1---    --111221', 'city1rswe.png  3   reg   crrr    --  -123    1---    --122331', 'city1rwe.png   3   reg   crgr    --  -1-1    1---    --122221', 'city2nw.png    3   reg   cggc    --  ----    1--1    --1111--', 'city2nwq.png   2   reg   cggc    --  ----    1--1    --1111--', 'city2nwqr.png  2   reg   crrc    --  -11-    1--1    --1221--', 'city2nwr.png   3   reg   crrc    --  -11-    1--1    --1221--', 'city2we.png    1   reg   gcgc    --  ----    -1-1    11--22--', 'city2weq.png   2   reg   gcgc    --  ----    -1-1    11--22--', 'city3.png      3   reg   ccgc    --  ----    11-1    ----11--', 'city3q.png     1   reg   ccgc    --  ----    11-1    ----11--', 'city3qr.png    2   reg   ccrc    --  --1-    11-1    ----12--', 'city3r.png     1   reg   ccrc    --  --1-    11-1    ----12--', 'city4q.png     1   reg   cccc    --  ----    1111    --------', 'city11ne.png   2   reg   ccgg    11  ----    12--    ----1111', 'city11we.png   3   reg   gcgc    11  ----    -1-2    11--11--', 'cloister.png   4   reg   gggg    --  ----    ----    11111111', 'cloisterr.png  2   reg   ggrg    --  --1-    ----    11111111', 'road2ns.png    8   reg   rgrg    --  1-1-    ----    12222111', 'road2sw.png    9   reg   ggrr    --  --11    ----    11111221', 'road3.png      4   reg   grrr    --  -123    ----    11122331', 'road4.png      1   reg   rrrr    --  1234    ----    12233441'];
+      tileDefinitions = ['city1rwe.png   1   start crgr    -1-1    1---    --122221    --    1', 'city1.png      5   reg   cggg    ----    1---    --111111    --    1', 'city1rse.png   3   reg   crrg    -11-    1---    --122111    --    1', 'city1rsw.png   3   reg   cgrr    --11    1---    --111221    --    1', 'city1rswe.png  3   reg   crrr    -123    1---    --122331    --    1', 'city1rwe.png   3   reg   crgr    -1-1    1---    --122221    --    1', 'city2nw.png    3   reg   cggc    ----    1--1    --1111--    --    1', 'city2nwq.png   2   reg   cggc    ----    1--1    --1111--    --    1', 'city2nwqr.png  2   reg   crrc    -11-    1--1    --1221--    --    1', 'city2nwr.png   3   reg   crrc    -11-    1--1    --1221--    --    1', 'city2we.png    1   reg   gcgc    ----    -1-1    11--22--    --   12', 'city2weq.png   2   reg   gcgc    ----    -1-1    11--22--    --   12', 'city3.png      3   reg   ccgc    ----    11-1    ----11--    --    1', 'city3q.png     1   reg   ccgc    ----    11-1    ----11--    --    1', 'city3qr.png    2   reg   ccrc    --1-    11-1    ----12--    --   12', 'city3r.png     1   reg   ccrc    --1-    11-1    ----12--    --   12', 'city4q.png     1   reg   cccc    ----    1111    --------    --    -', 'city11ne.png   2   reg   ccgg    ----    12--    ----1111    11    1', 'city11we.png   3   reg   gcgc    ----    -1-2    11--11--    11    1', 'cloister.png   4   reg   gggg    ----    ----    11111111    --    -', 'cloisterr.png  2   reg   ggrg    --1-    ----    11111111    --    -', 'road2ns.png    8   reg   rgrg    1-1-    ----    12222111    --    -', 'road2sw.png    9   reg   ggrr    --11    ----    11111221    --    -', 'road3.png      4   reg   grrr    -123    ----    11122331    --    -', 'road4.png      1   reg   rrrr    1234    ----    12233441    --    -'];
       tileSets = (function() {
         var _i, _len, _results;
         _results = [];
@@ -385,13 +409,14 @@
           count = tile[1];
           image = tile[0];
           isStart = tile[2] === 'start';
-          hasTwoCities = tile[4] === '11';
+          hasTwoCities = tile[7] === '11';
           hasPennant = __indexOf.call(image, 'q') >= 0;
+          cityFields = tile[8].split('');
           isCloister = image.indexOf("cloister") >= 0;
           edges = tile[3].split('');
-          road = tile[5].split('');
-          city = tile[6].split('');
-          grass = tile[7].split('');
+          road = tile[4].split('');
+          city = tile[5].split('');
+          grass = tile[6].split('');
           roadEdgeCount = ((function() {
             var _j, _len2, _results2;
             _results2 = [];
@@ -412,7 +437,7 @@
             var _results2;
             _results2 = [];
             for (i = 1; 1 <= count ? i <= count : i >= count; 1 <= count ? i++ : i--) {
-              _results2.push(new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, isCloister, isStart));
+              _results2.push(new Tile(image, north, east, south, west, hasTwoCities, hasRoadEnd, hasPennant, cityFields, isCloister, isStart));
             }
             return _results2;
           })());
@@ -504,7 +529,7 @@
       table = $("<table><tbody></tbody></table>");
       tbody = table.find("tbody");
       for (row = _ref = this.minrow - 1, _ref2 = this.maxrow + 1; _ref <= _ref2 ? row <= _ref2 : row >= _ref2; _ref <= _ref2 ? row++ : row--) {
-        tr = $("<tr></tr>");
+        tr = $("<tr row='" + row + "'></tr>");
         for (col = _ref3 = this.mincol - 1, _ref4 = this.maxcol + 1; _ref3 <= _ref4 ? col <= _ref4 : col >= _ref4; _ref3 <= _ref4 ? col++ : col--) {
           if ((0 <= row && row < this.maxSize) && (0 <= col && col < this.maxSize)) {
             td = $("<td row='" + row + "' col='" + col + "'></td>");
@@ -566,7 +591,7 @@
       }, this)).attr('disabled', '');
     };
     World.prototype.next = function() {
-      var candidates, tile;
+      var candidates, farm, tile, _i, _len, _ref, _results;
       if (this.tiles.length > 0) {
         tile = this.tiles[0];
         candidates = this.findValidPositions(tile);
@@ -574,7 +599,14 @@
       } else {
         $('#candidate').attr('style', 'visibility: hidden');
         $('#left').unbind().attr('disabled', 'disabled');
-        return $('#right').unbind().attr('disabled', 'disabled');
+        $('#right').unbind().attr('disabled', 'disabled');
+        _ref = this.farms;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          farm = _ref[_i];
+          _results.push(farm.calculateScore(this.cities));
+        }
+        return _results;
       }
     };
     World.prototype.placeTile = function(row, col, tile, neighbours) {
@@ -710,12 +742,12 @@
             for (_q = 0, _len9 = _ref10.length; _q < _len9; _q++) {
               city = _ref10[_q];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
+                city.add(row, col, dir, edge.city, tile.cityFields, tile.hasPennant);
+                added = true;
                 if (cities[0] !== city) {
                   cities[0].merge(city);
                   this.cities.remove(city);
                 }
-                city.add(row, col, dir, edge.city, tile.hasPennant);
-                added = true;
               }
             }
           } else {
@@ -723,7 +755,7 @@
             for (_r = 0, _len10 = _ref11.length; _r < _len10; _r++) {
               city = _ref11[_r];
               if (!added && city.has(otherRow, otherCol, otherEdge.city)) {
-                city.add(row, col, dir, edge.city, tile.hasPennant);
+                city.add(row, col, dir, edge.city, tile.cityFields, tile.hasPennant);
                 cities.push(city);
                 added = true;
               }
@@ -785,12 +817,12 @@
               for (_v = 0, _len14 = _ref15.length; _v < _len14; _v++) {
                 city = _ref15[_v];
                 if (!added && city.has(row, col, edge.city)) {
-                  city.add(row, col, dir, edge.city, tile.hasPennant);
+                  city.add(row, col, dir, edge.city, tile.cityFields, tile.hasPennant);
                   added = true;
                 }
               }
               if (!added) {
-                return this.cities.push(new City(row, col, dir, edge.city, tile.hasPennant));
+                return this.cities.push(new City(row, col, dir, edge.city, tile.cityFields, tile.hasPennant));
               }
             }
           }
@@ -853,7 +885,7 @@
     return _results;
   });
   $('#go').click(function() {
-    var tile, _i, _len, _ref;
+    var farm, tile, _i, _j, _len, _len2, _ref, _ref2;
     $('.candidate').unbind().attr('class', '');
     _ref = world.tiles;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -865,6 +897,11 @@
     $('#right').unbind().attr('disabled', 'disabled');
     $('#go').unbind().attr('disabled', 'disabled');
     $('#step').unbind().attr('disabled', 'disabled');
+    _ref2 = world.farms;
+    for (_j = 0, _len2 = _ref2.length; _j < _len2; _j++) {
+      farm = _ref2[_j];
+      farm.calculateScore(world.cities);
+    }
     return world.drawBoard();
   });
   $('#step').click(function() {
