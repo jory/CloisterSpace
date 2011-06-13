@@ -531,15 +531,19 @@
           item.attr('class', '').unbind();
         }
         $('#left').unbind().attr('disabled', 'disabled');
-        return $('#right').unbind().attr('disabled', 'disabled');
+        $('#right').unbind().attr('disabled', 'disabled');
+        return $('#next').unbind().attr('disabled', 'disabled');
       };
       attach = __bind(function(cell, row, col, neighbours) {
         return cell.unbind().click(__bind(function() {
           disableAll();
           this.placeTile(row, col, tile, neighbours);
-          this.tiles.shift();
           this.drawBoard();
-          return this.next();
+          return $('#next').click(__bind(function() {
+            $('#next').unbind().attr('disabled', 'disabled');
+            this.tiles.shift();
+            return this.next();
+          }, this)).attr('disabled', '');
         }, this)).attr('class', 'candidate');
       }, this);
       actives = (function() {

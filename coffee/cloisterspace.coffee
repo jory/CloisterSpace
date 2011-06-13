@@ -441,14 +441,18 @@ class World
 
       $('#left').unbind().attr('disabled', 'disabled')
       $('#right').unbind().attr('disabled', 'disabled')
+      $('#next').unbind().attr('disabled', 'disabled')
 
     attach = (cell, row, col, neighbours) =>
       cell.unbind().click(=>
         disableAll()
         @placeTile(row, col, tile, neighbours)
-        @tiles.shift()
         @drawBoard()
-        @next()
+        $('#next').click(=>
+          $('#next').unbind().attr('disabled', 'disabled')
+          @tiles.shift()
+          @next()
+        ).attr('disabled', '')
       ).attr('class', 'candidate')
 
     actives = for candidate in candidates[tile.rotation]
